@@ -17,6 +17,9 @@ const axiosTimeoutError = (request? : any): AxiosError => {
     return AxiosError();
 };
 
+const asiosResponseFromStatusCode = (statusCode: number, data: any): AxiosResponse => {};
+
+//
 
 
 

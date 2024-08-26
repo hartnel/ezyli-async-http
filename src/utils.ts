@@ -14,11 +14,53 @@ enum RequestMethods {
 
 
 const axiosTimeoutError = (request? : any): AxiosError => {
-    return AxiosError();
+    
+    const errorObject = {
+        code: 'ECONNABORTED',
+        request: request,
+        message: 'timeout',
+        response: null,
+
+
+    }
+
+    return new AxiosError(errorObject.message, errorObject.code, errorObject.request, errorObject.response)
 };
 
-const asiosResponseFromStatusCode = (statusCode: number, data: any): AxiosResponse => {};
 
+
+
+const axiosResponseFromStatusCode = (request: any, statusCode: number, data: any, headers: any): AxiosResponse | AxiosError => {
+    const responseObject = {
+        data: data,
+        status: statusCode,
+        statusText: '',
+        headers: {
+            ...headers
+        },
+        request : null,
+        config: {
+            ...request
+        }
+    }
+    
+
+    if (statusCode >= 200 && statusCode < 300) {
+        return responseObject
+    }else {
+        //  make error object using status code data and headers
+        const  errorOject = new AxiosError(
+           request.code,
+           request.message,
+           request,
+
+
+            
+        )
+
+        return errorOject
+    }
+};
 //
 
 

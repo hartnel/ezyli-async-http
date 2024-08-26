@@ -249,7 +249,7 @@ class AsyncRequestRepository {
                 }
                 else{
                     //return the error
-                    resolve(error);
+                    reject(error);
                 }
             });
 

@@ -12,13 +12,14 @@ enum RequestMethods {
 
 //fake axios responses
 
-const axiosTimeoutError = (request? : any): AxiosError => {
-    return {
-        config: request,
-        isAxiosError: true,
-        name: 'TimeoutError',
-        message: 'timeout of 1000ms exceeded',
-        toJSON: () => { return {} }
-    }
 
+const axiosTimeoutError = (request? : any): AxiosError => {
+    return AxiosError();
 };
+
+
+
+
+
+export { RequestMethods, axiosTimeoutError }
+

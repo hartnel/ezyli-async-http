@@ -1,6 +1,7 @@
 
 import axios, { AxiosResponse } from "axios"
 import {WebsocketHandler , WebSocketSubscription} from "ezyli-ws";
+import { RequestMethods } from "./utils";
 
 class AsyncResponse {
 

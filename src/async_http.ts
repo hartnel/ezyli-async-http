@@ -7,6 +7,10 @@ import axios, {
 import { WebsocketHandler, WebSocketSubscription } from "ezyli-ws";
 import { promiseAny, RequestMethods } from "./utils";
 
+
+const  requestFinished = "completed";
+const requestProgressing = "progressing";
+
 interface IAsyncRequestArgs {
   wsResponse: boolean;
   wsHeaders: boolean;
@@ -26,6 +30,8 @@ interface DefaultAsyncRequestArgs {
   retrieveSolutionTimeoutMillis?: number;
   retryRetriveSolutionIntervalMillis?: number;
   appName?: string;
+  wsResponse?: boolean;
+  wsHeaders?: boolean;
 }
 
 interface RetrieveSolutionArgs {
@@ -67,12 +73,14 @@ class AsyncRequestConfig {
 }
 
 class AsyncRequestArgs {
-  private waitAsyncResultTimeoutMillis?: number;
-  private maxRetryForRetrieveSolution?: number;
-  private submitRequestTimeoutMillis?: number;
-  private retrieveSolutionTimeoutMillis?: number;
-  private retryRetriveSolutionIntervalMillis?: number;
-  private appName?: string;
+  public waitAsyncResultTimeoutMillis?: number;
+  public maxRetryForRetrieveSolution?: number;
+  public submitRequestTimeoutMillis?: number;
+  public retrieveSolutionTimeoutMillis?: number;
+  public retryRetriveSolutionIntervalMillis?: number;
+  public appName?: string;
+  public wsResponse?: boolean;
+  public wsHeaders?: boolean;
 
   constructor({
     waitAsyncResultTimeoutMillis,
@@ -81,6 +89,9 @@ class AsyncRequestArgs {
     retrieveSolutionTimeoutMillis,
     retryRetriveSolutionIntervalMillis,
     appName,
+    wsResponse,
+    wsHeaders,
+
   }: DefaultAsyncRequestArgs) {
     this.waitAsyncResultTimeoutMillis = waitAsyncResultTimeoutMillis;
     this.maxRetryForRetrieveSolution = maxRetryForRetrieveSolution;
@@ -89,6 +100,8 @@ class AsyncRequestArgs {
     this.retryRetriveSolutionIntervalMillis =
       retryRetriveSolutionIntervalMillis;
     this.appName = appName;
+    this.wsResponse = wsResponse;
+    this.wsHeaders = wsHeaders;
   }
 }
 
@@ -263,6 +276,105 @@ class AsyncRequestRepository {
         });
     });
   }
+
+
+  // public async makeAsyncRequest(syncConfig : AxiosRequestConfig, asyncConfig : AsyncRequestArgs): Promise<ApiReponse> {
+  //   //this function will be used to make an async request
+
+  //   let appName = asyncConfig.appName ?? this.defaultOptions.appName;
+  //   let waitAsyncResultTimeoutMillis = asyncConfig.waitAsyncResultTimeoutMillis ?? this.defaultOptions.waitAsyncResultTimeoutMillis;
+  //   let maxRetryForRetrieveSolution = asyncConfig.maxRetryForRetrieveSolution ?? this.defaultOptions.maxRetryForRetrieveSolution;
+  //   let submitRequestTimeoutMillis = asyncConfig.submitRequestTimeoutMillis ?? this.defaultOptions.submitRequestTimeoutMillis;
+  //   let retrieveSolutionTimeoutMillis = asyncConfig.retrieveSolutionTimeoutMillis ?? this.defaultOptions.retrieveSolutionTimeoutMillis;
+  //   let retryRetriveSolutionIntervalMillis = asyncConfig.retryRetriveSolutionIntervalMillis ?? this.defaultOptions.retryRetriveSolutionIntervalMillis;
+    
+  //   //add appName to aprams
+  //   let originalParams = syncConfig.params ?? {};
+  //   let params = {
+  //     ...originalParams,
+  //     "app": appName,
+  //   };
+
+  //   //convert wsResponse and wsHeaders to 0/1
+  //   let wsResponse = asyncConfig.wsResponse ? "1" : "0";
+  //   let wsHeaders = asyncConfig.wsHeaders ? "1" : "0";
+
+  //   //add wsResponse and wsHeaders to params
+  //   params["ws_response"] = wsResponse;
+  //   params["ws_headers"] = wsHeaders;
+
+  //   return new Promise<ApiReponse>((resolve, reject) => {
+
+  //     //make the original request
+  //   this.makeSyncRequest({
+  //       ...syncConfig,
+  //       params: params,
+  //       timeout: submitRequestTimeoutMillis,
+  //   }).then(res => {
+  //       let response = res as AxiosResponse;
+  //      let data = response.data["data"];
+  //      let routingKey = data["routing_id"];
+
+  //      //wait for the ws response
+  //       let waitConfig = new AsyncRequestConfig({
+  //         requestId : routingKey,
+  //         shouldNotifyFn : (data: any) {
+  //           let wsRoutingKey = data["routing_id"];
+
+  //           // the state to know if it's completed
+  //           let state = data["state"];
+
+  //           let stateIsCompleted = state === requestFinished;
+  //           let stateIsProgressing = state === requestProgressing;
+
+  //           if(routingKey === wsRoutingKey){
+  //             return stateIsCompleted || stateIsProgressing;
+  //           }else{
+  //             return false;
+  //           }
+  //         },
+  //         callBackFn : (data:any)=> {
+
+  //         },
+  //         checkIsVerboseFn : (data:any) => {
+  //           let wsRoutingKey = data["routing_id"];
+  //           return routingKey === wsRoutingKey;
+  //         },
+  //         onVerboseCallback : (data:any) => {
+  //           let wsRoutingKey = data["routing_id"];
+  //           if(routingKey === wsRoutingKey){
+  //             console.log(data);
+  //           }
+  //         },
+
+  //         onTimeoutCallback : () => {
+  //           return new Promise<AxiosError>((resolve, reject) => {
+  //             reject(new Error("timeout"));
+  //           });
+  //         },
+  //       },
+        
+      
+  //     );
+
+
+
+  //   })
+  //     .catch(err => {
+        
+  //         reject(err);
+
+  //     });
+
+
+  //   });
+    
+
+
+
+
+
+  // }
 }
 
 export { AsyncRequestRepository, AsyncRequestConfig, AsyncRequestArgs };

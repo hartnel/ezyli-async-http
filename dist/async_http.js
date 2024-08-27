@@ -1,7 +1,8 @@
+import axios from "axios";
 import { WebsocketHandler, WebSocketSubscription } from "ezyli-ws";
 import { RequestMethods } from "./utils";
 class AsyncRequestConfig {
-    constructor({ shouldNotifyFn, callBackFn, checkIsVerboseFn, onVerboseCallback, onTimeoutCallback, requestId, waitTimeoutMillis }) {
+    constructor({ shouldNotifyFn, callBackFn, checkIsVerboseFn, onVerboseCallback, onTimeoutCallback, requestId, waitTimeoutMillis, }) {
         this.shouldNotifyFn = shouldNotifyFn;
         this.callBackFn = callBackFn;
         this.checkIsVerboseFn = checkIsVerboseFn;
@@ -12,12 +13,13 @@ class AsyncRequestConfig {
     }
 }
 class AsyncRequestArgs {
-    constructor({ waitAsyncResultTimeoutMillis, maxRetryForRetrieveSolution, submitRequestTimeoutMillis, retrieveSolutionTimeoutMillis, retryRetriveSolutionIntervalMillis, appName }) {
+    constructor({ waitAsyncResultTimeoutMillis, maxRetryForRetrieveSolution, submitRequestTimeoutMillis, retrieveSolutionTimeoutMillis, retryRetriveSolutionIntervalMillis, appName, }) {
         this.waitAsyncResultTimeoutMillis = waitAsyncResultTimeoutMillis;
         this.maxRetryForRetrieveSolution = maxRetryForRetrieveSolution;
         this.submitRequestTimeoutMillis = submitRequestTimeoutMillis;
         this.retrieveSolutionTimeoutMillis = retrieveSolutionTimeoutMillis;
-        this.retryRetriveSolutionIntervalMillis = retryRetriveSolutionIntervalMillis;
+        this.retryRetriveSolutionIntervalMillis =
+            retryRetriveSolutionIntervalMillis;
         this.appName = appName;
     }
 }
@@ -73,7 +75,7 @@ class AsyncRequestRepository {
                         //resolve the promise
                         resolve(res);
                     }
-                }
+                },
             });
             _websocketHandler.subscribe(sub);
         });
@@ -92,10 +94,7 @@ class AsyncRequestRepository {
             }, config.waitTimeoutMillis);
         });
         //future any
-        let promises = [
-            waitResultPromise,
-            timeoutPromise
-        ];
+        let promises = [waitResultPromise, timeoutPromise];
         //wait for the first promise
         let result = await Promise.any(promises);
         return result;
@@ -103,27 +102,12 @@ class AsyncRequestRepository {
     async makeSyncRequest(config) {
         //this method is just to make a sync request
         //just fire an axios request
-        let response = await this._httpClient?.request({
-            ...config
+        let response = await axios({
+            ...config,
         });
         return response;
     }
-    ;
-    async makeAsyncRequest(config) {
-        //parse appName
-        let appName = config.appName ?? this.defaultOptions.appName;
-        let waitAsyncResultTimeoutMillis = config.waitAsyncResultTimeoutMillis ?? this.defaultOptions.waitAsyncResultTimeoutMillis;
-        let maxRetryForRetrieveSolution = config.maxRetryForRetrieveSolution ?? this.defaultOptions.maxRetryForRetrieveSolution;
-        let submitRequestTimeoutMillis = config.submitRequestTimeoutMillis ?? this.defaultOptions.submitRequestTimeoutMillis;
-        let retrieveSolutionTimeoutMillis = config.retrieveSolutionTimeoutMillis ?? this.defaultOptions.retrieveSolutionTimeoutMillis;
-        //add appName to the query parameters
-        let originalParams = config.syncConfig?.params ?? {};
-        let params = {
-            ...originalParams,
-            "app": appName,
-        };
-    }
-    async _retrieveResponse({ routingId, actualRetryCount = 0, maxRetryForRetrieveSolution, retryRetriveSolutionIntervalMillis, retrieveSolutionTimeoutMillis }) {
+    async _retrieveResponse({ routingId, actualRetryCount = 0, maxRetryForRetrieveSolution, retryRetriveSolutionIntervalMillis, retrieveSolutionTimeoutMillis, }) {
         //this function will be called recursively until the response is ready
         //or the maxRetryForRetrieveSolution is reached
         //check the actualRetryCount
@@ -133,14 +117,16 @@ class AsyncRequestRepository {
                 url: url,
                 method: RequestMethods.GET,
                 params: {
-                    "id": routingId
-                }
-            }).then((response) => {
+                    id: routingId,
+                },
+            })
+                .then((response) => {
                 resolve(response);
-            }).catch((error) => {
+            })
+                .catch((error) => {
                 // some check before return the error
                 //check if it's internetConnexion error or timeout ...
-                let isTimeoutError = error.code === 'ECONNABORTED' || error.code === 'ENOTFOUND';
+                let isTimeoutError = error.code === "ECONNABORTED" || error.code === "ENOTFOUND";
                 let isApi404Error = error.response?.status === 404;
                 let body = error.response?.data;
                 let isExecutor404 = body?.["IS_EXECUTOR_404"] === true;
@@ -156,7 +142,7 @@ class AsyncRequestRepository {
                             actualRetryCount: actualRetryCount + 1,
                             maxRetryForRetrieveSolution,
                             retryRetriveSolutionIntervalMillis,
-                            retrieveSolutionTimeoutMillis
+                            retrieveSolutionTimeoutMillis,
                         });
                     }, retryRetriveSolutionIntervalMillis);
                 }
@@ -168,5 +154,4 @@ class AsyncRequestRepository {
         });
     }
 }
-//export types
 export { AsyncRequestRepository };

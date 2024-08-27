@@ -264,3 +264,5 @@ class AsyncRequestRepository {
     });
   }
 }
+
+export { AsyncRequestRepository };

@@ -6,7 +6,7 @@ import axios, {
   AxiosInstance,
 } from "axios";
 import { WebsocketHandler, WebSocketSubscription } from "ezyli-ws";
-import { promiseAny, RequestMethods } from "./utils";
+import { ApiReponse, axiosResponseFromStatusCode, promiseAny, RequestMethods } from "./utils";
 
 
 const  requestFinished = "completed";
@@ -33,6 +33,7 @@ interface DefaultAsyncRequestArgs {
   appName?: string;
   wsResponse?: boolean;
   wsHeaders?: boolean;
+  onVerboseCallback?: (data: any) => void;
 }
 
 interface RetrieveSolutionArgs {
@@ -43,14 +44,12 @@ interface RetrieveSolutionArgs {
   retrieveSolutionTimeoutMillis: number;
 }
 
-type ApiReponse = AxiosResponse | AxiosError | Error;
-
 class AsyncRequestConfig {
   public shouldNotifyFn: (data: any) => boolean;
   public callBackFn: (data: any) => Promise<ApiReponse>;
   public checkIsVerboseFn: (data: any) => boolean;
   public onVerboseCallback: (data: any) => void;
-  public onTimeoutCallback: () => Promise<AxiosError>;
+  public onTimeoutCallback: () => Promise<ApiReponse>;
   public requestId: string;
   public waitTimeoutMillis: number;
 
@@ -82,6 +81,7 @@ class AsyncRequestArgs {
   public appName?: string;
   public wsResponse?: boolean;
   public wsHeaders?: boolean;
+  public onVerboseCallback?: (data: any) => void;
 
   constructor({
     waitAsyncResultTimeoutMillis,
@@ -92,6 +92,7 @@ class AsyncRequestArgs {
     appName,
     wsResponse,
     wsHeaders,
+    onVerboseCallback,
 
   }: DefaultAsyncRequestArgs) {
     this.waitAsyncResultTimeoutMillis = waitAsyncResultTimeoutMillis;
@@ -103,6 +104,7 @@ class AsyncRequestArgs {
     this.appName = appName;
     this.wsResponse = wsResponse;
     this.wsHeaders = wsHeaders;
+    this.onVerboseCallback = onVerboseCallback;
   }
 }
 
@@ -396,7 +398,8 @@ class AsyncRequestRepository {
        //wait for the ws response
         let waitConfig = new AsyncRequestConfig({
           requestId : routingKey,
-          shouldNotifyFn : (wsData: any) {
+          waitTimeoutMillis : waitAsyncResultTimeoutMillis!,
+          shouldNotifyFn : (wsData: any) =>{
             let wsRoutingKey = wsData["routing_id"];
 
             // the state to know if it's completed
@@ -411,8 +414,9 @@ class AsyncRequestRepository {
               return false;
             }
           },
-          callBackFn : (wsData:any)=> {
-            console.log("[Async Request] onFInished", wsData);
+          callBackFn :  (wsData:any)=> {
+            return new Promise<ApiReponse>((resolveOfCallBack, rejectOfCallback)=>{
+              console.log("[Async Request] onFInished", wsData);
 
             //check if data has full response
             let hasResponse = wsData["has_response"];
@@ -423,35 +427,61 @@ class AsyncRequestRepository {
               let statusCode = wsData["status_code"];
 
               //create a response object
+              let fakeResponse = axiosResponseFromStatusCode(response.request, statusCode, resJson, resHeaders);
+
+              //build fake promise and return
+              resolveOfCallBack(fakeResponse);
               
+            } else{
+              console.log("[Async Request] response ws but the data is not in the response");
+              //retrieve the response
+                this._retrieveResponse({
+                routingId: routingKey,
+                maxRetryForRetrieveSolution : maxRetryForRetrieveSolution!,
+                actualRetryCount : 0,
+                retryRetriveSolutionIntervalMillis : retryRetriveSolutionIntervalMillis!,
+                retrieveSolutionTimeoutMillis : retrieveSolutionTimeoutMillis!,
+              }).then(res => resolveOfCallBack(res))
+              .catch(err => rejectOfCallback(err));
             }
-
-
-
+            });
 
           },
-          checkIsVerboseFn : (data:any) => {
-            let wsRoutingKey = data["routing_id"];
-            return routingKey === wsRoutingKey;
+          checkIsVerboseFn : (wsData:any) => {
+            let wsRoutingKey = wsData["routing_id"];
+            let state = wsData["state"];
+            let isInProgress = state === requestProgressing;
+            return routingKey === wsRoutingKey && isInProgress;
           },
-          onVerboseCallback : (data:any) => {
-            let wsRoutingKey = data["routing_id"];
-            if(routingKey === wsRoutingKey){
-              console.log(data);
-            }
+          onVerboseCallback : (wsData:any) => {
+            console.log("[Async Request] verboseCallback: ", wsData);
+            let verboseData = wsData["verbose_data"];
+            //call the verbose callback
+            asyncConfig.onVerboseCallback?.(verboseData);
           },
 
           onTimeoutCallback : () => {
-            return new Promise<AxiosError>((resolve, reject) => {
-              reject(new Error("timeout"));
+            return new Promise<ApiReponse>((resolveOfTimeOut, rejectOfTimeOut) => {
+              //console.log("[Async Request] timeoutCallback");
+              console.log("[Async Request] timeoutCallback");
+              //retry to retrieve the response
+              this._retrieveResponse({
+                routingId: routingKey,
+                maxRetryForRetrieveSolution : maxRetryForRetrieveSolution!,
+                actualRetryCount : 0,
+                retryRetriveSolutionIntervalMillis : retryRetriveSolutionIntervalMillis!,
+                retrieveSolutionTimeoutMillis : retrieveSolutionTimeoutMillis!,
+              }).then(res => resolveOfTimeOut(res))
+              .catch(err => rejectOfTimeOut(err));
             });
           },
         },
         
-      
       );
 
-
+      //wait for the result
+      this.waitWsResult(waitConfig).then(res => resolve(res))
+      .catch(err => reject(err));
 
     })
       .catch(err => {
@@ -460,13 +490,7 @@ class AsyncRequestRepository {
 
       });
 
-
     });
-    
-
-
-
-
 
   }
 }

@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosResponse } from "axios"
 
-
+type ApiReponse = AxiosResponse | AxiosError | Error;
 enum RequestMethods {
     GET = 'GET',
     POST = 'POST',
@@ -56,7 +56,7 @@ const axiosTimeoutError = (request? : any): AxiosError => {
 
 
 
-const axiosResponseFromStatusCode = (request: any, statusCode: number, data: any, headers: any): AxiosResponse | AxiosError => {
+const axiosResponseFromStatusCode = (request: any, statusCode: number, data: any, headers: any): ApiReponse => {
     const responseObject = {
         data: data,
         status: statusCode,
@@ -92,5 +92,5 @@ const axiosResponseFromStatusCode = (request: any, statusCode: number, data: any
 
 
 
-export { RequestMethods, axiosTimeoutError,promiseAny, axiosResponseFromStatusCode }
+export { RequestMethods, axiosTimeoutError,promiseAny, axiosResponseFromStatusCode, ApiReponse }
 

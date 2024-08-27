@@ -10,14 +10,10 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.axiosResponseFromStatusCode = exports.axiosTimeoutError = exports.RequestMethods = void 0;
 exports.promiseAny = promiseAny;
 var axios_1 = require("axios");
-var aggregate_error_1 = __importDefault(require("aggregate-error"));
 var RequestMethods;
 (function (RequestMethods) {
     RequestMethods["GET"] = "GET";
@@ -44,7 +40,7 @@ function promiseAny(promises) {
                 .catch(function (error) {
                 errors[index] = error;
                 if (errors.length === promises.length && !resolved) {
-                    reject(new aggregate_error_1.default(errors));
+                    reject(new Error(errors.toString()));
                 }
             });
         });

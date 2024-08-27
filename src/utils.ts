@@ -1,5 +1,4 @@
 import axios, { AxiosError, AxiosResponse } from "axios"
-import AggregateError from "aggregate-error"
 
 
 enum RequestMethods {
@@ -32,7 +31,7 @@ function promiseAny(promises: Promise<any>[]): Promise<any> {
                 .catch(error => {
                     errors[index] = error;
                     if (errors.length === promises.length && !resolved) {
-                        reject(new AggregateError(errors));
+                        reject(new Error(errors.toString()));
                     }
                 });
         });

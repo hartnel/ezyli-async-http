@@ -46,14 +46,12 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AsyncRequestArgs = exports.AsyncRequestConfig = exports.AsyncRequestRepository = void 0;
-var axios_1 = __importDefault(require("axios"));
 var ezyli_ws_1 = require("ezyli-ws");
 var utils_1 = require("./utils");
+var requestFinished = "completed";
+var requestProgressing = "progressing";
 var AsyncRequestConfig = /** @class */ (function () {
     function AsyncRequestConfig(_a) {
         var shouldNotifyFn = _a.shouldNotifyFn, callBackFn = _a.callBackFn, checkIsVerboseFn = _a.checkIsVerboseFn, onVerboseCallback = _a.onVerboseCallback, onTimeoutCallback = _a.onTimeoutCallback, requestId = _a.requestId, waitTimeoutMillis = _a.waitTimeoutMillis;
@@ -70,7 +68,7 @@ var AsyncRequestConfig = /** @class */ (function () {
 exports.AsyncRequestConfig = AsyncRequestConfig;
 var AsyncRequestArgs = /** @class */ (function () {
     function AsyncRequestArgs(_a) {
-        var waitAsyncResultTimeoutMillis = _a.waitAsyncResultTimeoutMillis, maxRetryForRetrieveSolution = _a.maxRetryForRetrieveSolution, submitRequestTimeoutMillis = _a.submitRequestTimeoutMillis, retrieveSolutionTimeoutMillis = _a.retrieveSolutionTimeoutMillis, retryRetriveSolutionIntervalMillis = _a.retryRetriveSolutionIntervalMillis, appName = _a.appName;
+        var waitAsyncResultTimeoutMillis = _a.waitAsyncResultTimeoutMillis, maxRetryForRetrieveSolution = _a.maxRetryForRetrieveSolution, submitRequestTimeoutMillis = _a.submitRequestTimeoutMillis, retrieveSolutionTimeoutMillis = _a.retrieveSolutionTimeoutMillis, retryRetriveSolutionIntervalMillis = _a.retryRetriveSolutionIntervalMillis, appName = _a.appName, wsResponse = _a.wsResponse, wsHeaders = _a.wsHeaders;
         this.waitAsyncResultTimeoutMillis = waitAsyncResultTimeoutMillis;
         this.maxRetryForRetrieveSolution = maxRetryForRetrieveSolution;
         this.submitRequestTimeoutMillis = submitRequestTimeoutMillis;
@@ -78,6 +76,8 @@ var AsyncRequestArgs = /** @class */ (function () {
         this.retryRetriveSolutionIntervalMillis =
             retryRetriveSolutionIntervalMillis;
         this.appName = appName;
+        this.wsResponse = wsResponse;
+        this.wsHeaders = wsHeaders;
     }
     return AsyncRequestArgs;
 }());
@@ -173,7 +173,7 @@ var AsyncRequestRepository = /** @class */ (function () {
                             }); }, config.waitTimeoutMillis);
                         });
                         promises = [waitResultPromise, timeoutPromise];
-                        return [4 /*yield*/, Promise.reject()];
+                        return [4 /*yield*/, (0, utils_1.promiseAny)(promises)];
                     case 1:
                         result = _a.sent();
                         return [2 /*return*/, result];
@@ -184,15 +184,99 @@ var AsyncRequestRepository = /** @class */ (function () {
     AsyncRequestRepository.prototype.makeSyncRequest = function (config) {
         return __awaiter(this, void 0, void 0, function () {
             var response;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, (0, axios_1.default)(__assign({}, config))];
+            var _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0: return [4 /*yield*/, ((_a = this._httpClient) === null || _a === void 0 ? void 0 : _a.request(__assign({}, config)))];
                     case 1:
-                        response = _a.sent();
+                        response = _b.sent();
                         return [2 /*return*/, response];
                 }
             });
         });
+    };
+    // async get 
+    AsyncRequestRepository.prototype.get = function (url, config) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.makeSyncRequest(__assign({ url: url, method: utils_1.RequestMethods.GET }, config))];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    // async post
+    AsyncRequestRepository.prototype.post = function (url, config, data) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.makeSyncRequest(__assign(__assign({ url: url, method: utils_1.RequestMethods.POST }, config), { data: data }))];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    // async put
+    AsyncRequestRepository.prototype.put = function (url, config, data) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.makeSyncRequest(__assign(__assign({ url: url, method: utils_1.RequestMethods.PUT }, config), { data: data }))];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    // async delete
+    AsyncRequestRepository.prototype.delete = function (url, config) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.makeSyncRequest(__assign({ url: url, method: utils_1.RequestMethods.DELETE }, config))];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    //  async patch
+    AsyncRequestRepository.prototype.patch = function (url, config, data) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.makeSyncRequest(__assign(__assign({ url: url, method: utils_1.RequestMethods.PATCH }, config), { data: data }))];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    //  async head
+    AsyncRequestRepository.prototype.head = function (url, config) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.makeSyncRequest(__assign({ url: url, method: utils_1.RequestMethods.HEAD }, config))];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    //  async options
+    AsyncRequestRepository.prototype.options = function (url, config) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.makeSyncRequest(__assign({ url: url, method: utils_1.RequestMethods.OPTIONS }, config))];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    //  static create with http client 
+    AsyncRequestRepository.create = function (httpClient) {
+        var asyncRequest = new AsyncRequestRepository();
+        asyncRequest.setCurrentHttpClient(httpClient);
+        return asyncRequest;
     };
     AsyncRequestRepository.prototype._retrieveResponse = function (_a) {
         return __awaiter(this, arguments, void 0, function (_b) {

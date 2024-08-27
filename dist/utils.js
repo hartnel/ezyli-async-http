@@ -10,17 +10,46 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.axiosTimeoutError = exports.RequestMethods = void 0;
+exports.axiosResponseFromStatusCode = exports.axiosTimeoutError = exports.RequestMethods = void 0;
+exports.promiseAny = promiseAny;
 var axios_1 = require("axios");
+var aggregate_error_1 = __importDefault(require("aggregate-error"));
 var RequestMethods;
 (function (RequestMethods) {
     RequestMethods["GET"] = "GET";
     RequestMethods["POST"] = "POST";
     RequestMethods["PUT"] = "PUT";
     RequestMethods["DELETE"] = "DELETE";
+    RequestMethods["PATCH"] = "PATCH";
+    RequestMethods["HEAD"] = "HEAD";
+    RequestMethods["OPTIONS"] = "OPTIONS";
 })(RequestMethods || (exports.RequestMethods = RequestMethods = {}));
 //fake axios responses
+function promiseAny(promises) {
+    return new Promise(function (resolve, reject) {
+        var errors = [];
+        var resolved = false;
+        promises.forEach(function (promise, index) {
+            promise
+                .then(function (value) {
+                if (!resolved) {
+                    resolved = true;
+                    resolve(value);
+                }
+            })
+                .catch(function (error) {
+                errors[index] = error;
+                if (errors.length === promises.length && !resolved) {
+                    reject(new aggregate_error_1.default(errors));
+                }
+            });
+        });
+    });
+}
 var axiosTimeoutError = function (request) {
     var errorObject = {
         code: 'ECONNABORTED',
@@ -49,3 +78,4 @@ var axiosResponseFromStatusCode = function (request, statusCode, data, headers) 
         return errorOject;
     }
 };
+exports.axiosResponseFromStatusCode = axiosResponseFromStatusCode;

@@ -263,3 +263,7 @@ class AsyncRequestRepository {
 
 
 }
+
+
+//export types
+export { AsyncRequestRepository};

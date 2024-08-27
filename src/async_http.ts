@@ -59,12 +59,12 @@ class AsyncRequestConfig {
 
 class AsyncRequestArgs {
 
-    private waitAsyncResultTimeoutMillis? : number;
-    private maxRetryForRetrieveSolution? : number;
-    private submitRequestTimeoutMillis? : number;
-    private retrieveSolutionTimeoutMillis? : number;
-    private retryRetriveSolutionIntervalMillis? : number;
-    private appName? : string;
+    public waitAsyncResultTimeoutMillis? : number;
+    public maxRetryForRetrieveSolution? : number;
+    public submitRequestTimeoutMillis? : number;
+    public retrieveSolutionTimeoutMillis? : number;
+    public retryRetriveSolutionIntervalMillis? : number;
+    public appName? : string;
 
 
     constructor({waitAsyncResultTimeoutMillis, maxRetryForRetrieveSolution, submitRequestTimeoutMillis, retrieveSolutionTimeoutMillis, retryRetriveSolutionIntervalMillis, appName} : DefaultAsyncRequestArgs) {
@@ -195,10 +195,24 @@ class AsyncRequestRepository {
         return response;
     };
 
-    // public async makeAsyncRequest(syncConfig){
+    public async makeAsyncRequest(config : IAsyncRequestArgs){
+
+        //parse appName
+        let appName = config.appName ?? this.defaultOptions.appName;
+        let waitAsyncResultTimeoutMillis = config.waitAsyncResultTimeoutMillis ?? this.defaultOptions.waitAsyncResultTimeoutMillis;
+        let maxRetryForRetrieveSolution = config.maxRetryForRetrieveSolution ?? this.defaultOptions.maxRetryForRetrieveSolution;
+        let submitRequestTimeoutMillis = config.submitRequestTimeoutMillis ?? this.defaultOptions.submitRequestTimeoutMillis;
+        let retrieveSolutionTimeoutMillis = config.retrieveSolutionTimeoutMillis ?? this.defaultOptions.retrieveSolutionTimeoutMillis;
 
 
-    // }
+        //add appName to the query parameters
+        let originalParams = config.syncConfig?.params ?? {};
+        let params = {
+            ...originalParams,
+            "app":appName,
+        };
+
+    }
 
 
     private async _retrieveResponse({routingId, actualRetryCount=0, maxRetryForRetrieveSolution, retryRetriveSolutionIntervalMillis, retrieveSolutionTimeoutMillis}:RetrieveSolutionArgs):Promise<ApiReponse> {

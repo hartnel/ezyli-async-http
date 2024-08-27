@@ -265,4 +265,4 @@ class AsyncRequestRepository {
   }
 }
 
-export { AsyncRequestRepository };
+export { AsyncRequestRepository, AsyncRequestConfig, AsyncRequestArgs };

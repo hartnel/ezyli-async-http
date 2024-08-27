@@ -189,11 +189,16 @@ class AsyncRequestRepository {
         //this method is just to make a sync request
 
         //just fire an axios request
-        let response = await axios({
+        let response = await this._httpClient?.request({
             ...config
-        });
+        }) as ApiReponse;
         return response;
     };
+
+    // public async makeAsyncRequest(syncConfig){
+
+
+    // }
 
 
     private async _retrieveResponse({routingId, actualRetryCount=0, maxRetryForRetrieveSolution, retryRetriveSolutionIntervalMillis, retrieveSolutionTimeoutMillis}:RetrieveSolutionArgs):Promise<ApiReponse> {

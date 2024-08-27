@@ -109,8 +109,20 @@ class AsyncRequestRepository {
         return response;
     }
     ;
-    // public async makeAsyncRequest(syncConfig){
-    // }
+    async makeAsyncRequest(config) {
+        //parse appName
+        let appName = config.appName ?? this.defaultOptions.appName;
+        let waitAsyncResultTimeoutMillis = config.waitAsyncResultTimeoutMillis ?? this.defaultOptions.waitAsyncResultTimeoutMillis;
+        let maxRetryForRetrieveSolution = config.maxRetryForRetrieveSolution ?? this.defaultOptions.maxRetryForRetrieveSolution;
+        let submitRequestTimeoutMillis = config.submitRequestTimeoutMillis ?? this.defaultOptions.submitRequestTimeoutMillis;
+        let retrieveSolutionTimeoutMillis = config.retrieveSolutionTimeoutMillis ?? this.defaultOptions.retrieveSolutionTimeoutMillis;
+        //add appName to the query parameters
+        let originalParams = config.syncConfig?.params ?? {};
+        let params = {
+            ...originalParams,
+            "app": appName,
+        };
+    }
     async _retrieveResponse({ routingId, actualRetryCount = 0, maxRetryForRetrieveSolution, retryRetriveSolutionIntervalMillis, retrieveSolutionTimeoutMillis }) {
         //this function will be called recursively until the response is ready
         //or the maxRetryForRetrieveSolution is reached

@@ -3,6 +3,7 @@ import axios, {
   AxiosError,
   Axios,
   AxiosRequestConfig,
+  AxiosInstance,
 } from "axios";
 import { WebsocketHandler, WebSocketSubscription } from "ezyli-ws";
 import { promiseAny, RequestMethods } from "./utils";
@@ -214,6 +215,83 @@ class AsyncRequestRepository {
     }) as ApiReponse;
     return response;
   }
+
+  // async get 
+  public async get(url:string, config:AxiosRequestConfig) : Promise<ApiReponse> {
+    return await this.makeSyncRequest({
+      url: url,
+      method: RequestMethods.GET,
+      ...config
+    });
+  }
+
+  // async post
+  public async post(url:string, config:AxiosRequestConfig, data:any) : Promise<ApiReponse> {
+    return await this.makeSyncRequest({
+      url: url,
+      method: RequestMethods.POST,
+      ...config,
+      data
+
+    });
+  }
+
+  // async put
+  public async put(url:string, config:AxiosRequestConfig, data:any) : Promise<ApiReponse> {
+    return await this.makeSyncRequest({
+      url: url,
+      method: RequestMethods.PUT,
+      ...config,
+      data,
+      
+    });
+  }
+
+  // async delete
+  public async delete(url:string, config:AxiosRequestConfig) : Promise<ApiReponse> {
+    return await this.makeSyncRequest({
+      url: url,
+      method: RequestMethods.DELETE,
+      ...config,
+    });
+  }
+
+  //  async patch
+  public async patch(url:string, config:AxiosRequestConfig, data:any) : Promise<ApiReponse> {
+    return await this.makeSyncRequest({
+      url: url,
+      method: RequestMethods.PATCH,
+      ...config,
+      data
+    });
+  }
+
+  //  async head
+  public async head(url:string, config:AxiosRequestConfig) : Promise<ApiReponse> {
+    return await this.makeSyncRequest({
+      url: url,
+      method: RequestMethods.HEAD,
+      ...config
+    });
+  }
+
+  //  async options
+  public async options(url:string, config:AxiosRequestConfig) : Promise<ApiReponse> {
+    return await this.makeSyncRequest({
+      url: url,
+      method: RequestMethods.OPTIONS,
+      ...config
+    });
+  }
+
+
+  //  static create with http client 
+  public static create(httpClient: Axios): AsyncRequestRepository {
+    let asyncRequest = new AsyncRequestRepository();
+    asyncRequest.setCurrentHttpClient(httpClient);
+    return asyncRequest;
+  }
+ 
 
   private async _retrieveResponse({
     routingId,

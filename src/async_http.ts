@@ -5,7 +5,7 @@ import axios, {
   AxiosRequestConfig,
 } from "axios";
 import { WebsocketHandler, WebSocketSubscription } from "ezyli-ws";
-import { RequestMethods } from "./utils";
+import { promiseAny, RequestMethods } from "./utils";
 
 interface IAsyncRequestArgs {
   wsResponse: boolean;
@@ -185,7 +185,7 @@ class AsyncRequestRepository {
     let promises = [waitResultPromise, timeoutPromise];
 
     //wait for the first promise
-    let result = await Promise.any(promises);
+    let result = await  promiseAny(promises); //Promise.reject(); //await Promise.any(promises);
 
     return result;
   }
@@ -196,9 +196,9 @@ class AsyncRequestRepository {
     //this method is just to make a sync request
 
     //just fire an axios request
-    let response = await axios({
+    let response = await this._httpClient?.request({
       ...config,
-    });
+    }) as ApiReponse;
     return response;
   }
 

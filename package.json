@@ -4,7 +4,7 @@
 
   "name": "ezyli-async-http",
 
-  "version": "1.0.0",
+  "version": "1.0.1",
 
   "main": "dist/index.js",
 
@@ -33,6 +33,8 @@
   "description": "The async http package for ezyli enterprise",
 
   "dependencies": {
+
+    "aggregate-error": "^5.0.0",
 
     "axios": "^1.7.5",
 

@@ -1,4 +1,5 @@
 import axios, { AxiosError, AxiosResponse } from "axios"
+import AggregateError from "aggregate-error"
 
 
 enum RequestMethods {
@@ -11,6 +12,29 @@ enum RequestMethods {
 
 
 //fake axios responses
+
+function promiseAny(promises: Promise<any>[]): Promise<any> {
+    return new Promise((resolve, reject) => {
+        let errors: any[] = [];
+        let resolved = false;
+
+        promises.forEach((promise, index) => {
+            promise
+                .then(value => {
+                    if (!resolved) {
+                        resolved = true;
+                        resolve(value);
+                    }
+                })
+                .catch(error => {
+                    errors[index] = error;
+                    if (errors.length === promises.length && !resolved) {
+                        reject(new AggregateError(errors));
+                    }
+                });
+        });
+    });
+}
 
 
 const axiosTimeoutError = (request? : any): AxiosError => {
@@ -66,5 +90,5 @@ const axiosResponseFromStatusCode = (request: any, statusCode: number, data: any
 
 
 
-export { RequestMethods, axiosTimeoutError }
+export { RequestMethods, axiosTimeoutError,promiseAny, axiosResponseFromStatusCode }
 

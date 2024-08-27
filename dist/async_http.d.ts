@@ -8,6 +8,16 @@ interface DefaultAsyncRequestArgs {
     appName?: string;
 }
 type ApiReponse = AxiosResponse | AxiosError | Error;
+declare class AsyncRequestConfig {
+    shouldNotifyFn: (data: any) => boolean;
+    callBackFn: (data: any) => Promise<ApiReponse>;
+    checkIsVerboseFn: (data: any) => boolean;
+    onVerboseCallback: (data: any) => void;
+    onTimeoutCallback: () => Promise<AxiosError>;
+    requestId: string;
+    waitTimeoutMillis: number;
+    constructor({ shouldNotifyFn, callBackFn, checkIsVerboseFn, onVerboseCallback, onTimeoutCallback, requestId, waitTimeoutMillis, }: AsyncRequestConfig);
+}
 declare class AsyncRequestArgs {
     private waitAsyncResultTimeoutMillis?;
     private maxRetryForRetrieveSolution?;
@@ -29,5 +39,5 @@ declare class AsyncRequestRepository {
     makeSyncRequest(config: AxiosRequestConfig): Promise<ApiReponse>;
     private _retrieveResponse;
 }
-export { AsyncRequestRepository };
+export { AsyncRequestRepository, AsyncRequestConfig, AsyncRequestArgs };
 //# sourceMappingURL=async_http.d.ts.map

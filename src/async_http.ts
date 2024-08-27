@@ -130,19 +130,23 @@ class AsyncRequestRepository {
 
   //the setDefault methods
   setDefaults(options: AsyncRequestArgs) {
-    this.defaultOptions = options;
+    // this.defaultOptions = options;
+    //set the default options
+    this.defaultOptions = new AsyncRequestArgs({
+      waitAsyncResultTimeoutMillis: options.waitAsyncResultTimeoutMillis ?? this.defaultOptions.waitAsyncResultTimeoutMillis,
+      maxRetryForRetrieveSolution: options.maxRetryForRetrieveSolution ?? this.defaultOptions.maxRetryForRetrieveSolution,
+      submitRequestTimeoutMillis: options.submitRequestTimeoutMillis ?? this.defaultOptions.submitRequestTimeoutMillis,
+      retrieveSolutionTimeoutMillis: options.retrieveSolutionTimeoutMillis ?? this.defaultOptions.retrieveSolutionTimeoutMillis,
+      retryRetriveSolutionIntervalMillis: options.retryRetriveSolutionIntervalMillis ?? this.defaultOptions.retryRetriveSolutionIntervalMillis,
+      appName: options.appName ?? this.defaultOptions.appName,
+      wsResponse: options.wsResponse ?? this.defaultOptions.wsResponse,
+      wsHeaders: options.wsHeaders ?? this.defaultOptions.wsHeaders,
+      onVerboseCallback: options.onVerboseCallback ?? this.defaultOptions.onVerboseCallback,
+  });
   }
 
   setCurrentHttpClient(httpClient: Axios) {
     this._httpClient = httpClient;
-  }
-
-  //check before make requests
-  //insure that appName is set
-  private checkBeforeRequest(options: IAsyncRequestArgs) {
-    if (!options.appName) {
-      throw new Error("appName is required");
-    }
   }
 
   //wait ws result function (a promise)
@@ -185,6 +189,7 @@ class AsyncRequestRepository {
       setTimeout(async () => {
         //check if the waitPromise is not completed then cancel it
         if (!waitResultPromiseIsResolved) {
+          console.log("[Async Request] the ws is not too fast. let execute my own timeout callback" , config.waitTimeoutMillis);
           //stop the subscription
           _websocketHandler.cancelSubscriptionById(config.requestId);
 
@@ -219,7 +224,7 @@ class AsyncRequestRepository {
   }
 
   // async get 
-  public async get(url:string, config:AxiosRequestConfig) : Promise<ApiReponse> {
+  public async get(url:string, config?:AxiosRequestConfig) : Promise<ApiReponse> {
     return await this.makeSyncRequest({
       url: url,
       method: RequestMethods.GET,
@@ -228,7 +233,7 @@ class AsyncRequestRepository {
   }
 
   // async post
-  public async post(url:string, config:AxiosRequestConfig, data:any) : Promise<ApiReponse> {
+  public async post(url:string, config?:AxiosRequestConfig, data?:any) : Promise<ApiReponse> {
     return await this.makeSyncRequest({
       url: url,
       method: RequestMethods.POST,
@@ -239,7 +244,7 @@ class AsyncRequestRepository {
   }
 
   // async put
-  public async put(url:string, config:AxiosRequestConfig, data:any) : Promise<ApiReponse> {
+  public async put(url:string, config?:AxiosRequestConfig, data?:any) : Promise<ApiReponse> {
     return await this.makeSyncRequest({
       url: url,
       method: RequestMethods.PUT,
@@ -250,7 +255,7 @@ class AsyncRequestRepository {
   }
 
   // async delete
-  public async delete(url:string, config:AxiosRequestConfig) : Promise<ApiReponse> {
+  public async delete(url?:string, config?:AxiosRequestConfig) : Promise<ApiReponse> {
     return await this.makeSyncRequest({
       url: url,
       method: RequestMethods.DELETE,
@@ -259,7 +264,7 @@ class AsyncRequestRepository {
   }
 
   //  async patch
-  public async patch(url:string, config:AxiosRequestConfig, data:any) : Promise<ApiReponse> {
+  public async patch(url?:string, config?:AxiosRequestConfig, data?:any) : Promise<ApiReponse> {
     return await this.makeSyncRequest({
       url: url,
       method: RequestMethods.PATCH,
@@ -269,7 +274,7 @@ class AsyncRequestRepository {
   }
 
   //  async head
-  public async head(url:string, config:AxiosRequestConfig) : Promise<ApiReponse> {
+  public async head(url?:string, config?:AxiosRequestConfig) : Promise<ApiReponse> {
     return await this.makeSyncRequest({
       url: url,
       method: RequestMethods.HEAD,
@@ -278,7 +283,7 @@ class AsyncRequestRepository {
   }
 
   //  async options
-  public async options(url:string, config:AxiosRequestConfig) : Promise<ApiReponse> {
+  public async options(url?:string, config?:AxiosRequestConfig) : Promise<ApiReponse> {
     return await this.makeSyncRequest({
       url: url,
       method: RequestMethods.OPTIONS,
@@ -293,6 +298,11 @@ class AsyncRequestRepository {
     asyncRequest.setCurrentHttpClient(httpClient);
     return asyncRequest;
   }
+
+  //get the instance
+  public static getInstance(): AsyncRequestRepository {
+    return this.instance;
+  }
  
 
   private async _retrieveResponse({
@@ -306,6 +316,13 @@ class AsyncRequestRepository {
     //or the maxRetryForRetrieveSolution is reached
 
     //check the actualRetryCount
+    if(actualRetryCount==0){
+      console.log("[Async Request] trying to retrieve the response");
+    }
+    else{
+      console.log("[Async Request] retrying to retrieve the response", actualRetryCount);
+    }
+    
 
     let url: string = "/i/retrieve-solution/";
 
@@ -329,18 +346,21 @@ class AsyncRequestRepository {
           let body = error.response?.data as any;
           let isExecutor404 = body?.["IS_EXECUTOR_404"] === true;
 
-          let reponseIsNotAvailable = !isExecutor404;
+          let reponseIsNotYetAvailable = !isExecutor404;
+
+          let isApi404ErrorBecauseOfExecutorNotFinished = isApi404Error && reponseIsNotYetAvailable;
 
           let isCorrectError =
-            isTimeoutError || isApi404Error || reponseIsNotAvailable;
+            isTimeoutError || isApi404ErrorBecauseOfExecutorNotFinished;
 
           let canRetryAgain = actualRetryCount < maxRetryForRetrieveSolution;
 
           let shouldRetry = isCorrectError && canRetryAgain;
 
+          console.log("[Async Request] shouldRetry", shouldRetry , "isCorrectError : " , isCorrectError , "canRetryAgain : ", canRetryAgain);
+
           if (shouldRetry) {
             setTimeout(async () => {
-              console.log("retrying to retrieve the response");
               return await this._retrieveResponse({
                 routingId,
                 actualRetryCount: actualRetryCount + 1,
@@ -358,26 +378,26 @@ class AsyncRequestRepository {
   }
 
 
-  public async makeAsyncRequest(syncConfig : AxiosRequestConfig, asyncConfig : AsyncRequestArgs): Promise<ApiReponse> {
+  public async makeAsyncRequest(syncConfig? : AxiosRequestConfig, asyncConfig? : AsyncRequestArgs): Promise<ApiReponse> {
     //this function will be used to make an async request
 
-    let appName = asyncConfig.appName ?? this.defaultOptions.appName;
-    let waitAsyncResultTimeoutMillis = asyncConfig.waitAsyncResultTimeoutMillis ?? this.defaultOptions.waitAsyncResultTimeoutMillis;
-    let maxRetryForRetrieveSolution = asyncConfig.maxRetryForRetrieveSolution ?? this.defaultOptions.maxRetryForRetrieveSolution;
-    let submitRequestTimeoutMillis = asyncConfig.submitRequestTimeoutMillis ?? this.defaultOptions.submitRequestTimeoutMillis;
-    let retrieveSolutionTimeoutMillis = asyncConfig.retrieveSolutionTimeoutMillis ?? this.defaultOptions.retrieveSolutionTimeoutMillis;
-    let retryRetriveSolutionIntervalMillis = asyncConfig.retryRetriveSolutionIntervalMillis ?? this.defaultOptions.retryRetriveSolutionIntervalMillis;
+    let appName = asyncConfig?.appName ?? this.defaultOptions.appName;
+    let waitAsyncResultTimeoutMillis = asyncConfig?.waitAsyncResultTimeoutMillis ?? this.defaultOptions.waitAsyncResultTimeoutMillis;
+    let maxRetryForRetrieveSolution = asyncConfig?.maxRetryForRetrieveSolution ?? this.defaultOptions.maxRetryForRetrieveSolution;
+    let submitRequestTimeoutMillis = asyncConfig?.submitRequestTimeoutMillis ?? this.defaultOptions.submitRequestTimeoutMillis;
+    let retrieveSolutionTimeoutMillis = asyncConfig?.retrieveSolutionTimeoutMillis ?? this.defaultOptions.retrieveSolutionTimeoutMillis;
+    let retryRetriveSolutionIntervalMillis = asyncConfig?.retryRetriveSolutionIntervalMillis ?? this.defaultOptions.retryRetriveSolutionIntervalMillis;
     
     //add appName to aprams
-    let originalParams = syncConfig.params ?? {};
+    let originalParams = syncConfig?.params ?? {};
     let params = {
       ...originalParams,
       "app": appName,
     };
 
     //convert wsResponse and wsHeaders to 0/1
-    let wsResponse = asyncConfig.wsResponse ? "1" : "0";
-    let wsHeaders = asyncConfig.wsHeaders ? "1" : "0";
+    let wsResponse = asyncConfig?.wsResponse ? "1" : "0";
+    let wsHeaders = asyncConfig?.wsHeaders ? "1" : "0";
 
     //add wsResponse and wsHeaders to params
     params["ws_response"] = wsResponse;
@@ -395,11 +415,14 @@ class AsyncRequestRepository {
        let data = response.data["data"];
        let routingKey = data["routing_id"];
 
+       console.log("[Async Request] routingKey", routingKey);
+
        //wait for the ws response
         let waitConfig = new AsyncRequestConfig({
           requestId : routingKey,
           waitTimeoutMillis : waitAsyncResultTimeoutMillis!,
-          shouldNotifyFn : (wsData: any) =>{
+          shouldNotifyFn : (rawWsData: any) =>{
+            let wsData = rawWsData["data"] ?? {};
             let wsRoutingKey = wsData["routing_id"];
 
             // the state to know if it's completed
@@ -414,17 +437,20 @@ class AsyncRequestRepository {
               return false;
             }
           },
-          callBackFn :  (wsData:any)=> {
+          callBackFn :  (rawWsData:any)=> {
             return new Promise<ApiReponse>((resolveOfCallBack, rejectOfCallback)=>{
-              console.log("[Async Request] onFInished", wsData);
+              let wsData = rawWsData["data"] ?? {};
+              console.log("[Async Request] wait response via websocket finished", wsData);
 
             //check if data has full response
             let hasResponse = wsData["has_response"];
 
             if(hasResponse){
-              let resJson = wsData["json"];
-              let resHeaders = wsData["headers"];
-              let statusCode = wsData["status_code"];
+              let responseContent = wsData["response"]; 
+              let resJson = responseContent["json"];
+              let resHeaders = responseContent["headers"];
+              let statusCode = responseContent["status_code"];
+              //console.log("[Async Request] data of the response is present in the response" , resJson , resHeaders, statusCode);
 
               //create a response object
               let fakeResponse = axiosResponseFromStatusCode(response.request, statusCode, resJson, resHeaders);
@@ -457,13 +483,13 @@ class AsyncRequestRepository {
             console.log("[Async Request] verboseCallback: ", wsData);
             let verboseData = wsData["verbose_data"];
             //call the verbose callback
-            asyncConfig.onVerboseCallback?.(verboseData);
+            asyncConfig?.onVerboseCallback?.(verboseData);
           },
 
           onTimeoutCallback : () => {
             return new Promise<ApiReponse>((resolveOfTimeOut, rejectOfTimeOut) => {
               //console.log("[Async Request] timeoutCallback");
-              console.log("[Async Request] timeoutCallback");
+              console.log("[Async Request] Executing onTimeOutCallback (too long to wait for the response via ws)");
               //retry to retrieve the response
               this._retrieveResponse({
                 routingId: routingKey,
@@ -493,6 +519,61 @@ class AsyncRequestRepository {
     });
 
   }
+
+  //async get
+  public async aGet(url: string, asyncConfig? : AsyncRequestArgs , syncConfig ? : AxiosRequestConfig ): Promise<ApiReponse> {
+    return await this.makeAsyncRequest({
+      ...syncConfig,
+      url,
+      method: RequestMethods.GET,
+    }, asyncConfig);
+  }
+
+
+  //async post
+  public async aPost(url: string, asyncConfig? : AsyncRequestArgs , syncConfig ? : AxiosRequestConfig, data?:any): Promise<ApiReponse> {
+    return await this.makeAsyncRequest({
+      ...syncConfig,
+      url,
+      method: RequestMethods.POST,
+      data
+    }, asyncConfig);
+  }
+
+  //async put
+  public async aPut(url: string, asyncConfig? : AsyncRequestArgs , syncConfig ? : AxiosRequestConfig, data?:any): Promise<ApiReponse> {
+    return await this.makeAsyncRequest({
+      ...syncConfig,
+      url,
+      method: RequestMethods.PUT,
+      data
+    }, asyncConfig);
+  }
+
+  //async delete
+  public async aDelete(url: string, asyncConfig? : AsyncRequestArgs , syncConfig ? : AxiosRequestConfig): Promise<ApiReponse> {
+    return await this.makeAsyncRequest({
+      ...syncConfig,
+      url,
+      method: RequestMethods.DELETE,
+    }, asyncConfig);
+  }
+
+  //async patch
+  public async aPatch(url: string, asyncConfig? : AsyncRequestArgs , syncConfig ? : AxiosRequestConfig, data?:any): Promise<ApiReponse> {
+    return await this.makeAsyncRequest({
+      ...syncConfig,
+      url,
+      method: RequestMethods.PATCH,
+      data
+    }, asyncConfig);
+  }
+
+
+
+
+
+  
 }
 
 export { AsyncRequestRepository, AsyncRequestConfig, AsyncRequestArgs };

@@ -68,7 +68,7 @@ var AsyncRequestConfig = /** @class */ (function () {
 exports.AsyncRequestConfig = AsyncRequestConfig;
 var AsyncRequestArgs = /** @class */ (function () {
     function AsyncRequestArgs(_a) {
-        var waitAsyncResultTimeoutMillis = _a.waitAsyncResultTimeoutMillis, maxRetryForRetrieveSolution = _a.maxRetryForRetrieveSolution, submitRequestTimeoutMillis = _a.submitRequestTimeoutMillis, retrieveSolutionTimeoutMillis = _a.retrieveSolutionTimeoutMillis, retryRetriveSolutionIntervalMillis = _a.retryRetriveSolutionIntervalMillis, appName = _a.appName, wsResponse = _a.wsResponse, wsHeaders = _a.wsHeaders;
+        var waitAsyncResultTimeoutMillis = _a.waitAsyncResultTimeoutMillis, maxRetryForRetrieveSolution = _a.maxRetryForRetrieveSolution, submitRequestTimeoutMillis = _a.submitRequestTimeoutMillis, retrieveSolutionTimeoutMillis = _a.retrieveSolutionTimeoutMillis, retryRetriveSolutionIntervalMillis = _a.retryRetriveSolutionIntervalMillis, appName = _a.appName, wsResponse = _a.wsResponse, wsHeaders = _a.wsHeaders, onVerboseCallback = _a.onVerboseCallback;
         this.waitAsyncResultTimeoutMillis = waitAsyncResultTimeoutMillis;
         this.maxRetryForRetrieveSolution = maxRetryForRetrieveSolution;
         this.submitRequestTimeoutMillis = submitRequestTimeoutMillis;
@@ -78,6 +78,7 @@ var AsyncRequestArgs = /** @class */ (function () {
         this.appName = appName;
         this.wsResponse = wsResponse;
         this.wsHeaders = wsHeaders;
+        this.onVerboseCallback = onVerboseCallback;
     }
     return AsyncRequestArgs;
 }());
@@ -98,17 +99,23 @@ var AsyncRequestRepository = /** @class */ (function () {
     }
     //the setDefault methods
     AsyncRequestRepository.prototype.setDefaults = function (options) {
-        this.defaultOptions = options;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        // this.defaultOptions = options;
+        //set the default options
+        this.defaultOptions = new AsyncRequestArgs({
+            waitAsyncResultTimeoutMillis: (_a = options.waitAsyncResultTimeoutMillis) !== null && _a !== void 0 ? _a : this.defaultOptions.waitAsyncResultTimeoutMillis,
+            maxRetryForRetrieveSolution: (_b = options.maxRetryForRetrieveSolution) !== null && _b !== void 0 ? _b : this.defaultOptions.maxRetryForRetrieveSolution,
+            submitRequestTimeoutMillis: (_c = options.submitRequestTimeoutMillis) !== null && _c !== void 0 ? _c : this.defaultOptions.submitRequestTimeoutMillis,
+            retrieveSolutionTimeoutMillis: (_d = options.retrieveSolutionTimeoutMillis) !== null && _d !== void 0 ? _d : this.defaultOptions.retrieveSolutionTimeoutMillis,
+            retryRetriveSolutionIntervalMillis: (_e = options.retryRetriveSolutionIntervalMillis) !== null && _e !== void 0 ? _e : this.defaultOptions.retryRetriveSolutionIntervalMillis,
+            appName: (_f = options.appName) !== null && _f !== void 0 ? _f : this.defaultOptions.appName,
+            wsResponse: (_g = options.wsResponse) !== null && _g !== void 0 ? _g : this.defaultOptions.wsResponse,
+            wsHeaders: (_h = options.wsHeaders) !== null && _h !== void 0 ? _h : this.defaultOptions.wsHeaders,
+            onVerboseCallback: (_j = options.onVerboseCallback) !== null && _j !== void 0 ? _j : this.defaultOptions.onVerboseCallback,
+        });
     };
     AsyncRequestRepository.prototype.setCurrentHttpClient = function (httpClient) {
         this._httpClient = httpClient;
-    };
-    //check before make requests
-    //insure that appName is set
-    AsyncRequestRepository.prototype.checkBeforeRequest = function (options) {
-        if (!options.appName) {
-            throw new Error("appName is required");
-        }
     };
     //wait ws result function (a promise)
     AsyncRequestRepository.prototype.waitWsResult = function (config) {
@@ -159,6 +166,7 @@ var AsyncRequestRepository = /** @class */ (function () {
                                     switch (_a.label) {
                                         case 0:
                                             if (!!waitResultPromiseIsResolved) return [3 /*break*/, 2];
+                                            console.log("[Async Request] the ws is not too fast. let execute my own timeout callback", config.waitTimeoutMillis);
                                             //stop the subscription
                                             _websocketHandler.cancelSubscriptionById(config.requestId);
                                             return [4 /*yield*/, config.onTimeoutCallback()];
@@ -184,12 +192,11 @@ var AsyncRequestRepository = /** @class */ (function () {
     AsyncRequestRepository.prototype.makeSyncRequest = function (config) {
         return __awaiter(this, void 0, void 0, function () {
             var response;
-            var _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0: return [4 /*yield*/, ((_a = this._httpClient) === null || _a === void 0 ? void 0 : _a.request(__assign({}, config)))];
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this._httpClient.request(__assign({}, config))];
                     case 1:
-                        response = _b.sent();
+                        response = _a.sent();
                         return [2 /*return*/, response];
                 }
             });
@@ -278,6 +285,10 @@ var AsyncRequestRepository = /** @class */ (function () {
         asyncRequest.setCurrentHttpClient(httpClient);
         return asyncRequest;
     };
+    //get the instance
+    AsyncRequestRepository.getInstance = function () {
+        return this.instance;
+    };
     AsyncRequestRepository.prototype._retrieveResponse = function (_a) {
         return __awaiter(this, arguments, void 0, function (_b) {
             var url;
@@ -286,6 +297,15 @@ var AsyncRequestRepository = /** @class */ (function () {
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
+                        //this function will be called recursively until the response is ready
+                        //or the maxRetryForRetrieveSolution is reached
+                        //check the actualRetryCount
+                        if (actualRetryCount == 0) {
+                            console.log("[Async Request] trying to retrieve the response");
+                        }
+                        else {
+                            console.log("[Async Request] retrying to retrieve the response", actualRetryCount);
+                        }
                         url = "/i/retrieve-solution/";
                         return [4 /*yield*/, new Promise(function (resolve, reject) {
                                 _this.makeSyncRequest({
@@ -306,23 +326,23 @@ var AsyncRequestRepository = /** @class */ (function () {
                                     var isApi404Error = ((_a = error.response) === null || _a === void 0 ? void 0 : _a.status) === 404;
                                     var body = (_b = error.response) === null || _b === void 0 ? void 0 : _b.data;
                                     var isExecutor404 = (body === null || body === void 0 ? void 0 : body["IS_EXECUTOR_404"]) === true;
-                                    var reponseIsNotAvailable = !isExecutor404;
-                                    var isCorrectError = isTimeoutError || isApi404Error || reponseIsNotAvailable;
+                                    var reponseIsNotYetAvailable = !isExecutor404;
+                                    var isApi404ErrorBecauseOfExecutorNotFinished = isApi404Error && reponseIsNotYetAvailable;
+                                    var isCorrectError = isTimeoutError || isApi404ErrorBecauseOfExecutorNotFinished;
                                     var canRetryAgain = actualRetryCount < maxRetryForRetrieveSolution;
                                     var shouldRetry = isCorrectError && canRetryAgain;
+                                    console.log("[Async Request] shouldRetry", shouldRetry, "isCorrectError : ", isCorrectError, "canRetryAgain : ", canRetryAgain);
                                     if (shouldRetry) {
                                         setTimeout(function () { return __awaiter(_this, void 0, void 0, function () {
                                             return __generator(this, function (_a) {
                                                 switch (_a.label) {
-                                                    case 0:
-                                                        console.log("retrying to retrieve the response");
-                                                        return [4 /*yield*/, this._retrieveResponse({
-                                                                routingId: routingId,
-                                                                actualRetryCount: actualRetryCount + 1,
-                                                                maxRetryForRetrieveSolution: maxRetryForRetrieveSolution,
-                                                                retryRetriveSolutionIntervalMillis: retryRetriveSolutionIntervalMillis,
-                                                                retrieveSolutionTimeoutMillis: retrieveSolutionTimeoutMillis,
-                                                            })];
+                                                    case 0: return [4 /*yield*/, this._retrieveResponse({
+                                                            routingId: routingId,
+                                                            actualRetryCount: actualRetryCount + 1,
+                                                            maxRetryForRetrieveSolution: maxRetryForRetrieveSolution,
+                                                            retryRetriveSolutionIntervalMillis: retryRetriveSolutionIntervalMillis,
+                                                            retrieveSolutionTimeoutMillis: retrieveSolutionTimeoutMillis,
+                                                        })];
                                                     case 1: return [2 /*return*/, _a.sent()];
                                                 }
                                             });
@@ -335,6 +355,178 @@ var AsyncRequestRepository = /** @class */ (function () {
                                 });
                             })];
                     case 1: return [2 /*return*/, _d.sent()];
+                }
+            });
+        });
+    };
+    AsyncRequestRepository.prototype.makeAsyncRequest = function (syncConfig, asyncConfig) {
+        return __awaiter(this, void 0, void 0, function () {
+            var appName, waitAsyncResultTimeoutMillis, maxRetryForRetrieveSolution, submitRequestTimeoutMillis, retrieveSolutionTimeoutMillis, retryRetriveSolutionIntervalMillis, originalParams, params, wsResponse, wsHeaders;
+            var _this = this;
+            var _a, _b, _c, _d, _e, _f, _g;
+            return __generator(this, function (_h) {
+                appName = (_a = asyncConfig === null || asyncConfig === void 0 ? void 0 : asyncConfig.appName) !== null && _a !== void 0 ? _a : this.defaultOptions.appName;
+                waitAsyncResultTimeoutMillis = (_b = asyncConfig === null || asyncConfig === void 0 ? void 0 : asyncConfig.waitAsyncResultTimeoutMillis) !== null && _b !== void 0 ? _b : this.defaultOptions.waitAsyncResultTimeoutMillis;
+                maxRetryForRetrieveSolution = (_c = asyncConfig === null || asyncConfig === void 0 ? void 0 : asyncConfig.maxRetryForRetrieveSolution) !== null && _c !== void 0 ? _c : this.defaultOptions.maxRetryForRetrieveSolution;
+                submitRequestTimeoutMillis = (_d = asyncConfig === null || asyncConfig === void 0 ? void 0 : asyncConfig.submitRequestTimeoutMillis) !== null && _d !== void 0 ? _d : this.defaultOptions.submitRequestTimeoutMillis;
+                retrieveSolutionTimeoutMillis = (_e = asyncConfig === null || asyncConfig === void 0 ? void 0 : asyncConfig.retrieveSolutionTimeoutMillis) !== null && _e !== void 0 ? _e : this.defaultOptions.retrieveSolutionTimeoutMillis;
+                retryRetriveSolutionIntervalMillis = (_f = asyncConfig === null || asyncConfig === void 0 ? void 0 : asyncConfig.retryRetriveSolutionIntervalMillis) !== null && _f !== void 0 ? _f : this.defaultOptions.retryRetriveSolutionIntervalMillis;
+                originalParams = (_g = syncConfig === null || syncConfig === void 0 ? void 0 : syncConfig.params) !== null && _g !== void 0 ? _g : {};
+                params = __assign(__assign({}, originalParams), { "app": appName });
+                wsResponse = (asyncConfig === null || asyncConfig === void 0 ? void 0 : asyncConfig.wsResponse) ? "1" : "0";
+                wsHeaders = (asyncConfig === null || asyncConfig === void 0 ? void 0 : asyncConfig.wsHeaders) ? "1" : "0";
+                //add wsResponse and wsHeaders to params
+                params["ws_response"] = wsResponse;
+                params["ws_headers"] = wsHeaders;
+                return [2 /*return*/, new Promise(function (resolve, reject) {
+                        //make the original request
+                        _this.makeSyncRequest(__assign(__assign({}, syncConfig), { params: params, timeout: submitRequestTimeoutMillis })).then(function (res) {
+                            var response = res;
+                            var data = response.data["data"];
+                            var routingKey = data["routing_id"];
+                            console.log("[Async Request] routingKey", routingKey);
+                            //wait for the ws response
+                            var waitConfig = new AsyncRequestConfig({
+                                requestId: routingKey,
+                                waitTimeoutMillis: waitAsyncResultTimeoutMillis,
+                                shouldNotifyFn: function (rawWsData) {
+                                    var _a;
+                                    var wsData = (_a = rawWsData["data"]) !== null && _a !== void 0 ? _a : {};
+                                    var wsRoutingKey = wsData["routing_id"];
+                                    // the state to know if it's completed
+                                    var state = wsData["state"];
+                                    var stateIsCompleted = state === requestFinished;
+                                    var stateIsProgressing = state === requestProgressing;
+                                    if (routingKey === wsRoutingKey) {
+                                        return stateIsCompleted || stateIsProgressing;
+                                    }
+                                    else {
+                                        return false;
+                                    }
+                                },
+                                callBackFn: function (rawWsData) {
+                                    return new Promise(function (resolveOfCallBack, rejectOfCallback) {
+                                        var _a;
+                                        var wsData = (_a = rawWsData["data"]) !== null && _a !== void 0 ? _a : {};
+                                        console.log("[Async Request] wait response via websocket finished", wsData);
+                                        //check if data has full response
+                                        var hasResponse = wsData["has_response"];
+                                        if (hasResponse) {
+                                            var responseContent = wsData["response"];
+                                            var resJson = responseContent["json"];
+                                            var resHeaders = responseContent["headers"];
+                                            var statusCode = responseContent["status_code"];
+                                            //console.log("[Async Request] data of the response is present in the response" , resJson , resHeaders, statusCode);
+                                            //create a response object
+                                            var fakeResponse = (0, utils_1.axiosResponseFromStatusCode)(response.request, statusCode, resJson, resHeaders);
+                                            //build fake promise and return
+                                            resolveOfCallBack(fakeResponse);
+                                        }
+                                        else {
+                                            console.log("[Async Request] response ws but the data is not in the response");
+                                            //retrieve the response
+                                            _this._retrieveResponse({
+                                                routingId: routingKey,
+                                                maxRetryForRetrieveSolution: maxRetryForRetrieveSolution,
+                                                actualRetryCount: 0,
+                                                retryRetriveSolutionIntervalMillis: retryRetriveSolutionIntervalMillis,
+                                                retrieveSolutionTimeoutMillis: retrieveSolutionTimeoutMillis,
+                                            }).then(function (res) { return resolveOfCallBack(res); })
+                                                .catch(function (err) { return rejectOfCallback(err); });
+                                        }
+                                    });
+                                },
+                                checkIsVerboseFn: function (wsData) {
+                                    var wsRoutingKey = wsData["routing_id"];
+                                    var state = wsData["state"];
+                                    var isInProgress = state === requestProgressing;
+                                    return routingKey === wsRoutingKey && isInProgress;
+                                },
+                                onVerboseCallback: function (wsData) {
+                                    var _a;
+                                    console.log("[Async Request] verboseCallback: ", wsData);
+                                    var verboseData = wsData["verbose_data"];
+                                    //call the verbose callback
+                                    (_a = asyncConfig === null || asyncConfig === void 0 ? void 0 : asyncConfig.onVerboseCallback) === null || _a === void 0 ? void 0 : _a.call(asyncConfig, verboseData);
+                                },
+                                onTimeoutCallback: function () {
+                                    return new Promise(function (resolveOfTimeOut, rejectOfTimeOut) {
+                                        //console.log("[Async Request] timeoutCallback");
+                                        console.log("[Async Request] Executing onTimeOutCallback (too long to wait for the response via ws)");
+                                        //retry to retrieve the response
+                                        _this._retrieveResponse({
+                                            routingId: routingKey,
+                                            maxRetryForRetrieveSolution: maxRetryForRetrieveSolution,
+                                            actualRetryCount: 0,
+                                            retryRetriveSolutionIntervalMillis: retryRetriveSolutionIntervalMillis,
+                                            retrieveSolutionTimeoutMillis: retrieveSolutionTimeoutMillis,
+                                        }).then(function (res) { return resolveOfTimeOut(res); })
+                                            .catch(function (err) { return rejectOfTimeOut(err); });
+                                    });
+                                },
+                            });
+                            //wait for the result
+                            _this.waitWsResult(waitConfig).then(function (res) { return resolve(res); })
+                                .catch(function (err) { return reject(err); });
+                        })
+                            .catch(function (err) {
+                            reject(err);
+                        });
+                    })];
+            });
+        });
+    };
+    //async get
+    AsyncRequestRepository.prototype.aGet = function (url, asyncConfig, syncConfig) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.makeAsyncRequest(__assign(__assign({}, syncConfig), { url: url, method: utils_1.RequestMethods.GET }), asyncConfig)];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    //async post
+    AsyncRequestRepository.prototype.aPost = function (url, asyncConfig, syncConfig, data) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.makeAsyncRequest(__assign(__assign({}, syncConfig), { url: url, method: utils_1.RequestMethods.POST, data: data }), asyncConfig)];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    //async put
+    AsyncRequestRepository.prototype.aPut = function (url, asyncConfig, syncConfig, data) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.makeAsyncRequest(__assign(__assign({}, syncConfig), { url: url, method: utils_1.RequestMethods.PUT, data: data }), asyncConfig)];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    //async delete
+    AsyncRequestRepository.prototype.aDelete = function (url, asyncConfig, syncConfig) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.makeAsyncRequest(__assign(__assign({}, syncConfig), { url: url, method: utils_1.RequestMethods.DELETE }), asyncConfig)];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    //async patch
+    AsyncRequestRepository.prototype.aPatch = function (url, asyncConfig, syncConfig, data) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.makeAsyncRequest(__assign(__assign({}, syncConfig), { url: url, method: utils_1.RequestMethods.PATCH, data: data }), asyncConfig)];
+                    case 1: return [2 /*return*/, _a.sent()];
                 }
             });
         });

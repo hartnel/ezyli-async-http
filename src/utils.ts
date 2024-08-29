@@ -56,7 +56,7 @@ const axiosTimeoutError = (request? : any): AxiosError => {
 
 
 
-const axiosResponseFromStatusCode = (request: any, statusCode: number, data: any, headers: any): ApiReponse => {
+const axiosResponseFromStatusCode = (request: any, statusCode: number, data: any, headers: any): any => {
     const responseObject = {
         data: data,
         status: statusCode,

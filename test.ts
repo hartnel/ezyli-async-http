@@ -4,8 +4,8 @@ import { WebsocketHandler } from "ezyli-ws";
 
 
 
-let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQwODQzMzQ2LCJpYXQiOjE3MjQ3NzI5NDYsImp0aSI6IjMyMWYzZGVlZGY0YjRlODliZjhkYmFhYmViNTM5N2RiIiwidXNlcl9pZCI6MX0.fHx7_wwjKAg13logU5pxNrMVinPT69MefFv9bZXl87Y"
-let channel = "SERVICE-1";
+let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQwOTc3MjgyLCJpYXQiOjE3MjQ5MDY4ODIsImp0aSI6Ijc5YTRmZjE4NDMxODQ5NzViYTc0OGE0NGJkNWJiNDdlIiwidXNlcl9pZCI6MX0.rsKNK4aDpF9a1GuxIwClcAQwIW8TUzKIelBocv3lMWE"
+let channel = "ADMIN_1";
 let wsUrl = `ws://57.128.166.240:8080/ws/socket-server/?token=${token}&channel_name=${channel}`;
 
 console.log("wsUrl", wsUrl);
@@ -26,7 +26,7 @@ function run(){
 
 let asynRequest =  AsyncRequestRepository.create(instance);
 asynRequest.setDefaults({
-  appName : "EZYTAKO_IC_DRIVER",
+  appName : "EZYTAKO_ADMIN",
 });
 
 //try to get 
@@ -47,7 +47,7 @@ asynRequest.makeAsyncRequest({
   wsHeaders : true,
   wsResponse : true,
 }).then((response) => {
-  console.log("locations",   (response as AxiosResponse).data);
+  console.log("locations",   response.data);
 }).catch((error) => {
   console.log(error);
 });

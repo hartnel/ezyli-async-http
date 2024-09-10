@@ -94,6 +94,8 @@ var AsyncRequestRepository = /** @class */ (function () {
             submitRequestTimeoutMillis: 5 * 1000 * 60, // 5 minutes
             retrieveSolutionTimeoutMillis: 5 * 1000 * 60, // 5 minutes
             retryRetriveSolutionIntervalMillis: 5 * 1000, // 5 seconds
+            wsHeaders: true,
+            wsResponse: true,
         });
         return AsyncRequestRepository.instance;
     }
@@ -361,23 +363,25 @@ var AsyncRequestRepository = /** @class */ (function () {
     };
     AsyncRequestRepository.prototype.makeAsyncRequest = function (syncConfig, asyncConfig) {
         return __awaiter(this, void 0, void 0, function () {
-            var appName, waitAsyncResultTimeoutMillis, maxRetryForRetrieveSolution, submitRequestTimeoutMillis, retrieveSolutionTimeoutMillis, retryRetriveSolutionIntervalMillis, originalParams, params, wsResponse, wsHeaders;
+            var appName, waitAsyncResultTimeoutMillis, maxRetryForRetrieveSolution, submitRequestTimeoutMillis, retrieveSolutionTimeoutMillis, retryRetriveSolutionIntervalMillis, wsResponse, wsHeaders, originalParams, params, strWsResponse, strWsHeaders;
             var _this = this;
-            var _a, _b, _c, _d, _e, _f, _g;
-            return __generator(this, function (_h) {
+            var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+            return __generator(this, function (_k) {
                 appName = (_a = asyncConfig === null || asyncConfig === void 0 ? void 0 : asyncConfig.appName) !== null && _a !== void 0 ? _a : this.defaultOptions.appName;
                 waitAsyncResultTimeoutMillis = (_b = asyncConfig === null || asyncConfig === void 0 ? void 0 : asyncConfig.waitAsyncResultTimeoutMillis) !== null && _b !== void 0 ? _b : this.defaultOptions.waitAsyncResultTimeoutMillis;
                 maxRetryForRetrieveSolution = (_c = asyncConfig === null || asyncConfig === void 0 ? void 0 : asyncConfig.maxRetryForRetrieveSolution) !== null && _c !== void 0 ? _c : this.defaultOptions.maxRetryForRetrieveSolution;
                 submitRequestTimeoutMillis = (_d = asyncConfig === null || asyncConfig === void 0 ? void 0 : asyncConfig.submitRequestTimeoutMillis) !== null && _d !== void 0 ? _d : this.defaultOptions.submitRequestTimeoutMillis;
                 retrieveSolutionTimeoutMillis = (_e = asyncConfig === null || asyncConfig === void 0 ? void 0 : asyncConfig.retrieveSolutionTimeoutMillis) !== null && _e !== void 0 ? _e : this.defaultOptions.retrieveSolutionTimeoutMillis;
                 retryRetriveSolutionIntervalMillis = (_f = asyncConfig === null || asyncConfig === void 0 ? void 0 : asyncConfig.retryRetriveSolutionIntervalMillis) !== null && _f !== void 0 ? _f : this.defaultOptions.retryRetriveSolutionIntervalMillis;
-                originalParams = (_g = syncConfig === null || syncConfig === void 0 ? void 0 : syncConfig.params) !== null && _g !== void 0 ? _g : {};
+                wsResponse = (_g = asyncConfig === null || asyncConfig === void 0 ? void 0 : asyncConfig.wsResponse) !== null && _g !== void 0 ? _g : this.defaultOptions.wsResponse;
+                wsHeaders = (_h = asyncConfig === null || asyncConfig === void 0 ? void 0 : asyncConfig.wsHeaders) !== null && _h !== void 0 ? _h : this.defaultOptions.wsResponse;
+                originalParams = (_j = syncConfig === null || syncConfig === void 0 ? void 0 : syncConfig.params) !== null && _j !== void 0 ? _j : {};
                 params = __assign(__assign({}, originalParams), { "app": appName });
-                wsResponse = (asyncConfig === null || asyncConfig === void 0 ? void 0 : asyncConfig.wsResponse) ? "1" : "0";
-                wsHeaders = (asyncConfig === null || asyncConfig === void 0 ? void 0 : asyncConfig.wsHeaders) ? "1" : "0";
+                strWsResponse = wsResponse ? "1" : "0";
+                strWsHeaders = wsHeaders ? "1" : "0";
                 //add wsResponse and wsHeaders to params
-                params["ws_response"] = wsResponse;
-                params["ws_headers"] = wsHeaders;
+                params["ws_response"] = strWsResponse;
+                params["ws_headers"] = strWsHeaders;
                 return [2 /*return*/, new Promise(function (resolve, reject) {
                         //make the original request
                         _this.makeSyncRequest(__assign(__assign({}, syncConfig), { params: params, timeout: submitRequestTimeoutMillis })).then(function (res) {

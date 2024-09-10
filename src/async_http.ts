@@ -123,6 +123,8 @@ class AsyncRequestRepository {
       submitRequestTimeoutMillis: 5 * 1000 * 60, // 5 minutes
       retrieveSolutionTimeoutMillis: 5 * 1000 * 60, // 5 minutes
       retryRetriveSolutionIntervalMillis: 5 * 1000, // 5 seconds
+      wsHeaders:true,
+      wsResponse:true,
     });
 
     return AsyncRequestRepository.instance;
@@ -387,7 +389,8 @@ class AsyncRequestRepository {
     let submitRequestTimeoutMillis = asyncConfig?.submitRequestTimeoutMillis ?? this.defaultOptions.submitRequestTimeoutMillis;
     let retrieveSolutionTimeoutMillis = asyncConfig?.retrieveSolutionTimeoutMillis ?? this.defaultOptions.retrieveSolutionTimeoutMillis;
     let retryRetriveSolutionIntervalMillis = asyncConfig?.retryRetriveSolutionIntervalMillis ?? this.defaultOptions.retryRetriveSolutionIntervalMillis;
-    
+    let wsResponse = asyncConfig?.wsResponse ?? this.defaultOptions.wsResponse;
+    let wsHeaders = asyncConfig?.wsHeaders ?? this.defaultOptions.wsResponse;
     //add appName to aprams
     let originalParams = syncConfig?.params ?? {};
     let params = {
@@ -396,12 +399,12 @@ class AsyncRequestRepository {
     };
 
     //convert wsResponse and wsHeaders to 0/1
-    let wsResponse = asyncConfig?.wsResponse ? "1" : "0";
-    let wsHeaders = asyncConfig?.wsHeaders ? "1" : "0";
+    let strWsResponse = wsResponse ? "1" : "0";
+    let strWsHeaders = wsHeaders ? "1" : "0";
 
     //add wsResponse and wsHeaders to params
-    params["ws_response"] = wsResponse;
-    params["ws_headers"] = wsHeaders;
+    params["ws_response"] = strWsResponse;
+    params["ws_headers"] = strWsHeaders;
 
     return new Promise<AxiosResponse>((resolve, reject) => {
 

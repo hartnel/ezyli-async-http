@@ -423,8 +423,14 @@ var AsyncRequestRepository = /** @class */ (function () {
                                             //console.log("[Async Request] data of the response is present in the response" , resJson , resHeaders, statusCode);
                                             //create a response object
                                             var fakeResponse = (0, utils_1.axiosResponseFromStatusCode)(response.request, statusCode, resJson, resHeaders);
-                                            //build fake promise and return
-                                            resolveOfCallBack(fakeResponse);
+                                            //check if response is Axios error then reject
+                                            if (fakeResponse instanceof Error) {
+                                                rejectOfCallback(fakeResponse);
+                                            }
+                                            else {
+                                                //build fake promise and return
+                                                resolveOfCallBack(fakeResponse);
+                                            }
                                         }
                                         else {
                                             console.log("[Async Request] response ws but the data is not in the response");

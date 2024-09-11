@@ -29,9 +29,10 @@ function promiseAny(promises: Promise<any>[]): Promise<any> {
                     }
                 })
                 .catch(error => {
-                    errors[index] = error;
-                    if (errors.length === promises.length && !resolved) {
-                        reject(new Error(errors.toString()));
+
+                    if(!resolved){
+                        resolved = true;
+                        reject(error);
                     }
                 });
         });
@@ -75,16 +76,16 @@ const axiosResponseFromStatusCode = (request: any, statusCode: number, data: any
         return responseObject
     }else {
         //  make error object using status code data and headers
-        const  errorOject = new AxiosError(
-           request.code,
-           request.message,
-           request,
-
-
-            
+        //build axios error object
+        let error = new AxiosError(
+            'Request failed with status code ' + statusCode, //message
+            statusCode.toString(), //code
+            responseObject.config, // config
+            request, //request
+            responseObject, //response
         )
 
-        return errorOject
+        return error;
     }
 };
 //

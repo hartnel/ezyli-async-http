@@ -38,9 +38,9 @@ function promiseAny(promises) {
                 }
             })
                 .catch(function (error) {
-                errors[index] = error;
-                if (errors.length === promises.length && !resolved) {
-                    reject(new Error(errors.toString()));
+                if (!resolved) {
+                    resolved = true;
+                    reject(error);
                 }
             });
         });
@@ -70,8 +70,13 @@ var axiosResponseFromStatusCode = function (request, statusCode, data, headers) 
     }
     else {
         //  make error object using status code data and headers
-        var errorOject = new axios_1.AxiosError(request.code, request.message, request);
-        return errorOject;
+        //build axios error object
+        var error = new axios_1.AxiosError('Request failed with status code ' + statusCode, //message
+        statusCode.toString(), //code
+        responseObject.config, // config
+        request, //request
+        responseObject);
+        return error;
     }
 };
 exports.axiosResponseFromStatusCode = axiosResponseFromStatusCode;

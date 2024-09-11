@@ -122,72 +122,60 @@ var AsyncRequestRepository = /** @class */ (function () {
     //wait ws result function (a promise)
     AsyncRequestRepository.prototype.waitWsResult = function (config) {
         return __awaiter(this, void 0, void 0, function () {
-            var _websocketHandler, waitResultPromiseIsResolved, waitResultPromise, timeoutPromise, promises, result;
+            var _websocketHandler, waitResultPromiseIsResolved, waitResultPromise, timeoutPromise, promises;
             var _this = this;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _websocketHandler = new ezyli_ws_1.WebsocketHandler();
-                        waitResultPromiseIsResolved = false;
-                        waitResultPromise = new Promise(function (resolve, reject) {
-                            var sub = new ezyli_ws_1.WebSocketSubscription({
-                                id: config.requestId,
-                                shouldNotify: function (data) { return config.shouldNotifyFn(data); },
-                                callback: function (data) { return __awaiter(_this, void 0, void 0, function () {
-                                    var isVerboseEvent, res;
-                                    var _a;
-                                    return __generator(this, function (_b) {
-                                        switch (_b.label) {
-                                            case 0:
-                                                isVerboseEvent = (_a = config.checkIsVerboseFn(data)) !== null && _a !== void 0 ? _a : false;
-                                                if (!isVerboseEvent) return [3 /*break*/, 1];
-                                                //call the callback
-                                                config.callBackFn(data);
-                                                return [3 /*break*/, 3];
-                                            case 1:
-                                                //finish
-                                                _websocketHandler.cancelSubscriptionById(config.requestId);
-                                                return [4 /*yield*/, config.callBackFn(data)];
-                                            case 2:
-                                                res = _b.sent();
-                                                //resolve the promise
-                                                resolve(res);
-                                                _b.label = 3;
-                                            case 3: return [2 /*return*/];
-                                        }
+                _websocketHandler = new ezyli_ws_1.WebsocketHandler();
+                waitResultPromiseIsResolved = false;
+                waitResultPromise = new Promise(function (resolve, reject) {
+                    var sub = new ezyli_ws_1.WebSocketSubscription({
+                        id: config.requestId,
+                        shouldNotify: function (data) { return config.shouldNotifyFn(data); },
+                        callback: function (data) { return __awaiter(_this, void 0, void 0, function () {
+                            var isVerboseEvent;
+                            var _a;
+                            return __generator(this, function (_b) {
+                                isVerboseEvent = (_a = config.checkIsVerboseFn(data)) !== null && _a !== void 0 ? _a : false;
+                                if (isVerboseEvent) {
+                                    //call the callback
+                                    config.onVerboseCallback(data);
+                                }
+                                else {
+                                    //finish
+                                    _websocketHandler.cancelSubscriptionById(config.requestId);
+                                    //resolve or reject the promise
+                                    config.callBackFn(data).then(function (res) { return resolve(res); }).catch(function (err) {
+                                        console.log("************************************************[waitWsResult] error in callBackFn", err.message);
+                                        reject(err);
+                                    }).finally(function () {
+                                        waitResultPromiseIsResolved = true;
                                     });
-                                }); },
+                                }
+                                return [2 /*return*/];
                             });
-                            _websocketHandler.subscribe(sub);
+                        }); },
+                    });
+                    _websocketHandler.subscribe(sub);
+                });
+                timeoutPromise = new Promise(function (resolveOfTimeout, rejectOfTimeout) {
+                    //start a setTimeout
+                    setTimeout(function () { return __awaiter(_this, void 0, void 0, function () {
+                        return __generator(this, function (_a) {
+                            //check if the waitPromise is not completed then cancel it
+                            if (!waitResultPromiseIsResolved) {
+                                console.log("[Async Request] the ws is not too fast. let execute my own timeout callback", config.waitTimeoutMillis);
+                                //stop the subscription
+                                _websocketHandler.cancelSubscriptionById(config.requestId);
+                                //call on timeout callback
+                                config.onTimeoutCallback().then(function (res) { return resolveOfTimeout(res); }).catch(function (err) { return rejectOfTimeout(err); });
+                            }
+                            return [2 /*return*/];
                         });
-                        timeoutPromise = new Promise(function (resolve, reject) {
-                            //start a setTimeout
-                            setTimeout(function () { return __awaiter(_this, void 0, void 0, function () {
-                                var res;
-                                return __generator(this, function (_a) {
-                                    switch (_a.label) {
-                                        case 0:
-                                            if (!!waitResultPromiseIsResolved) return [3 /*break*/, 2];
-                                            console.log("[Async Request] the ws is not too fast. let execute my own timeout callback", config.waitTimeoutMillis);
-                                            //stop the subscription
-                                            _websocketHandler.cancelSubscriptionById(config.requestId);
-                                            return [4 /*yield*/, config.onTimeoutCallback()];
-                                        case 1:
-                                            res = _a.sent();
-                                            //resolve the promise
-                                            resolve(res);
-                                            _a.label = 2;
-                                        case 2: return [2 /*return*/];
-                                    }
-                                });
-                            }); }, config.waitTimeoutMillis);
-                        });
-                        promises = [waitResultPromise, timeoutPromise];
-                        return [4 /*yield*/, (0, utils_1.promiseAny)(promises)];
-                    case 1:
-                        result = _a.sent();
-                        return [2 /*return*/, result];
-                }
+                    }); }, config.waitTimeoutMillis);
+                });
+                promises = [waitResultPromise, timeoutPromise];
+                //wait for the first promise
+                return [2 /*return*/, (0, utils_1.promiseAny)(promises)];
             });
         });
     };
@@ -422,7 +410,9 @@ var AsyncRequestRepository = /** @class */ (function () {
                                             var statusCode = responseContent["status_code"];
                                             //console.log("[Async Request] data of the response is present in the response" , resJson , resHeaders, statusCode);
                                             //create a response object
+                                            //console.log("***************************" ,response.request, statusCode, resJson, resHeaders )
                                             var fakeResponse = (0, utils_1.axiosResponseFromStatusCode)(response.request, statusCode, resJson, resHeaders);
+                                            //console.log("********************************* type", typeof fakeResponse , fakeResponse instanceof Error);
                                             //check if response is Axios error then reject
                                             if (fakeResponse instanceof Error) {
                                                 rejectOfCallback(fakeResponse);
@@ -477,7 +467,10 @@ var AsyncRequestRepository = /** @class */ (function () {
                             });
                             //wait for the result
                             _this.waitWsResult(waitConfig).then(function (res) { return resolve(res); })
-                                .catch(function (err) { return reject(err); });
+                                .catch(function (err) {
+                                console.log("**********************************[Async Request] error in waitWsResult", err.message);
+                                reject(err);
+                            });
                         })
                             .catch(function (err) {
                             reject(err);

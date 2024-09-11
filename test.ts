@@ -8,7 +8,7 @@ let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIi
 let channel = "ADMIN_1";
 let wsUrl = `ws://57.128.166.240:8080/ws/socket-server/?token=${token}&channel_name=${channel}`;
 
-console.log("wsUrl", wsUrl);
+//console.log("wsUrl", wsUrl);
 
 
 let ws = new WebsocketHandler();
@@ -39,17 +39,16 @@ let locationsUrl = "/i/routing/search/";
 //   console.log(error);
 // });
 
-asynRequest.makeAsyncRequest({
-  url:locationsUrl,
-  method: "get",
-  params : {"query" : "Total Melen"},
-} ,  {
+asynRequest.aPost(
+  "/i/config/",  {
   wsHeaders : true,
   wsResponse : true,
+}, {
+  data :{"operation" : "check-can-create-config"}
 }).then((response) => {
   console.log("locations",   response.data);
 }).catch((error) => {
-  console.log(error);
+  console.log("***************************************", error.response.data , error.code);
 });
 
 

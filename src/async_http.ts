@@ -169,15 +169,20 @@ class AsyncRequestRepository {
 
             if (isVerboseEvent) {
               //call the callback
-              config.callBackFn(data);
+              config.onVerboseCallback(data);
             } else {
               //finish
               _websocketHandler.cancelSubscriptionById(config.requestId);
 
-              // call the callback passed in config
-              let res = await config.callBackFn(data);
-              //resolve the promise
-              resolve(res);
+              //resolve or reject the promise
+              
+              config.callBackFn(data).then(res => resolve(res)).catch(err => {
+                console.log("************************************************[waitWsResult] error in callBackFn", err.message);
+                reject(err);
+              }).finally(() => {
+                waitResultPromiseIsResolved = true;
+              });
+              
             }
           },
         });
@@ -186,7 +191,7 @@ class AsyncRequestRepository {
       }
     );
 
-    let timeoutPromise: Promise<AxiosResponse> = new Promise((resolve, reject) => {
+    let timeoutPromise: Promise<AxiosResponse> = new Promise((resolveOfTimeout, rejectOfTimeout) => {
       //start a setTimeout
       setTimeout(async () => {
         //check if the waitPromise is not completed then cancel it
@@ -196,10 +201,8 @@ class AsyncRequestRepository {
           _websocketHandler.cancelSubscriptionById(config.requestId);
 
           //call on timeout callback
-          let res = await config.onTimeoutCallback();
+          config.onTimeoutCallback().then(res => resolveOfTimeout(res)).catch(err => rejectOfTimeout(err));
 
-          //resolve the promise
-          resolve(res);
         }
       }, config.waitTimeoutMillis);
     });
@@ -208,9 +211,11 @@ class AsyncRequestRepository {
     let promises = [waitResultPromise, timeoutPromise];
 
     //wait for the first promise
-    let result = await  promiseAny(promises); //Promise.reject(); //await Promise.any(promises);
+    return promiseAny(promises);
+    //let result = await promiseAny(promises); //Promise.reject(); //await Promise.any(promises);
+    //console.log("*******************************************[all] result", result);
 
-    return result;
+    //return result;
   }
 
   public async makeSyncRequest(
@@ -456,7 +461,9 @@ class AsyncRequestRepository {
               //console.log("[Async Request] data of the response is present in the response" , resJson , resHeaders, statusCode);
 
               //create a response object
+              //console.log("***************************" ,response.request, statusCode, resJson, resHeaders )
               let fakeResponse = axiosResponseFromStatusCode(response.request, statusCode, resJson, resHeaders);
+              //console.log("********************************* type", typeof fakeResponse , fakeResponse instanceof Error);
 
               //check if response is Axios error then reject
               if(fakeResponse instanceof Error){
@@ -516,7 +523,10 @@ class AsyncRequestRepository {
 
       //wait for the result
       this.waitWsResult(waitConfig).then(res => resolve(res))
-      .catch(err => reject(err));
+      .catch(err => {
+        console.log("**********************************[Async Request] error in waitWsResult", err.message);
+        reject(err);
+      });
 
     })
       .catch(err => {

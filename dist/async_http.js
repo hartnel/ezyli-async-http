@@ -436,18 +436,21 @@ var AsyncRequestRepository = /** @class */ (function () {
                                         }
                                     });
                                 },
-                                checkIsVerboseFn: function (wsData) {
+                                checkIsVerboseFn: function (rawWsData) {
+                                    var _a;
+                                    var wsData = (_a = rawWsData["data"]) !== null && _a !== void 0 ? _a : {};
                                     var wsRoutingKey = wsData["routing_id"];
                                     var state = wsData["state"];
                                     var isInProgress = state === requestProgressing;
                                     return routingKey === wsRoutingKey && isInProgress;
                                 },
-                                onVerboseCallback: function (wsData) {
-                                    var _a;
+                                onVerboseCallback: function (rawWsData) {
+                                    var _a, _b;
+                                    var wsData = (_a = rawWsData["data"]) !== null && _a !== void 0 ? _a : {};
                                     console.log("[Async Request] verboseCallback: ", wsData);
                                     var verboseData = wsData["verbose_data"];
                                     //call the verbose callback
-                                    (_a = asyncConfig === null || asyncConfig === void 0 ? void 0 : asyncConfig.onVerboseCallback) === null || _a === void 0 ? void 0 : _a.call(asyncConfig, verboseData);
+                                    (_b = asyncConfig === null || asyncConfig === void 0 ? void 0 : asyncConfig.onVerboseCallback) === null || _b === void 0 ? void 0 : _b.call(asyncConfig, verboseData);
                                 },
                                 onTimeoutCallback: function () {
                                     return new Promise(function (resolveOfTimeOut, rejectOfTimeOut) {

@@ -489,13 +489,15 @@ class AsyncRequestRepository {
             });
 
           },
-          checkIsVerboseFn : (wsData:any) => {
+          checkIsVerboseFn : (rawWsData:any) => {
+            let wsData = rawWsData["data"] ?? {};
             let wsRoutingKey = wsData["routing_id"];
             let state = wsData["state"];
             let isInProgress = state === requestProgressing;
             return routingKey === wsRoutingKey && isInProgress;
           },
-          onVerboseCallback : (wsData:any) => {
+          onVerboseCallback : (rawWsData:any) => {
+            let wsData = rawWsData["data"] ?? {};
             console.log("[Async Request] verboseCallback: ", wsData);
             let verboseData = wsData["verbose_data"];
             //call the verbose callback

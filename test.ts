@@ -44,11 +44,11 @@ asynRequest.aPost(
   wsHeaders : true,
   wsResponse : true,
 }, {
-  data :{"operation" : "check-can-create-config"}
+  data :{"operation" : "check-can-create-configf"}
 }).then((response) => {
   console.log("locations",   response.data);
 }).catch((error) => {
-  console.log("***************************************", error.response.data , error.code);
+  console.log("[catche***************************************", error.response.data , error.code);
 });
 
 

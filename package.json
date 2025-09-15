@@ -1,8 +1,8 @@
 {
 
-  "package-name": "microkit-async-http",
+  "package-name": "microkitx-async-http",
 
-  "name": "microkit-async-http",
+  "name": "microkitx-async-http",
 
   "version": "1.0.8",
 
@@ -44,7 +44,7 @@
 
     "@types/ws": "^8.5.12",
 
-    "typescript": "^5.5.4"
+    "typescript": "^5.9.2"
 
   }
 

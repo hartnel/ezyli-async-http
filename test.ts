@@ -1,6 +1,6 @@
 import axios, { Axios, AxiosResponse } from "axios";
 import { AsyncRequestRepository } from "./src/index";
-import { WebsocketHandler } from "ezyli-ws";
+import { WebsocketHandler } from "microkitx-ws";
 
 
 

@@ -5,7 +5,7 @@ import axios, {
   AxiosRequestConfig,
   AxiosInstance,
 } from "axios";
-import { WebsocketHandler, WebSocketSubscription } from "ezyli-ws";
+import { WebsocketHandler, WebSocketSubscription } from "microkitx-ws";
 import { axiosResponseFromStatusCode, promiseAny, RequestMethods } from "./utils";
 
 

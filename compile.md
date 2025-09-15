@@ -4,5 +4,5 @@ How to compile projet and push ?
 ```bash npm install --save-dev typescript
 ```
 2- run tsc to compile
-```npm run typescript
+```npx tsc
 ```

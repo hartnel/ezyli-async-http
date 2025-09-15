@@ -4,7 +4,7 @@
 
   "name": "microkitx-async-http",
 
-  "version": "1.0.8",
+  "version": "1.0.9",
 
   "main": "dist/index.js",
 
@@ -36,11 +36,13 @@
 
     "axios": "^1.7.5",
 
-    "ezyli-ws": "^1.0.1"
+    "microkitx-ws": "^1.0.1"
 
   },
 
   "devDependencies": {
+
+    "@types/node": "^24.5.0",
 
     "@types/ws": "^8.5.12",
 

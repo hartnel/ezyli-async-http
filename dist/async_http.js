@@ -48,7 +48,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AsyncRequestArgs = exports.AsyncRequestConfig = exports.AsyncRequestRepository = void 0;
-var ezyli_ws_1 = require("ezyli-ws");
+var microkitx_ws_1 = require("microkitx-ws");
 var utils_1 = require("./utils");
 var requestFinished = "completed";
 var requestProgressing = "progressing";
@@ -125,10 +125,10 @@ var AsyncRequestRepository = /** @class */ (function () {
             var _websocketHandler, waitResultPromiseIsResolved, waitResultPromise, timeoutPromise, promises;
             var _this = this;
             return __generator(this, function (_a) {
-                _websocketHandler = new ezyli_ws_1.WebsocketHandler();
+                _websocketHandler = new microkitx_ws_1.WebsocketHandler();
                 waitResultPromiseIsResolved = false;
                 waitResultPromise = new Promise(function (resolve, reject) {
-                    var sub = new ezyli_ws_1.WebSocketSubscription({
+                    var sub = new microkitx_ws_1.WebSocketSubscription({
                         id: config.requestId,
                         shouldNotify: function (data) { return config.shouldNotifyFn(data); },
                         callback: function (data) { return __awaiter(_this, void 0, void 0, function () {

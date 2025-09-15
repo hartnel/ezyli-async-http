@@ -1,8 +1,8 @@
 {
 
-  "package-name": "ezyli-async-http",
+  "package-name": "microkit-async-http",
 
-  "name": "ezyli-async-http",
+  "name": "microkit-async-http",
 
   "version": "1.0.8",
 
@@ -30,7 +30,7 @@
 
   "license": "ISC",
 
-  "description": "The async http package for ezyli enterprise",
+  "description": "The async http package enterprises",
 
   "dependencies": {
 
